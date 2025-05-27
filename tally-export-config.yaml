@@ -119,8 +119,12 @@ master:
           field: BankBranchname
           type: text
         - name: bill_credit_period
-          field: $$Number:$BillCreditPeriod
+          field: if $$IsNumber:$BillCreditPeriod then $$Number:$BillCreditPeriod else 0
           type: number
+        - name: gstapplicable
+          field: GSTAPPLICABLE
+          type: text
+
     - name: mst_vouchertype
       collection: VoucherType
       nature: Primary
@@ -594,7 +598,10 @@ transaction:
       collection: Voucher
       nature: Primary
       fetch:
-        - Narration,PartyLedgerName,PlaceOfSupply,Reference,ReferenceDate
+        - Narration,PartyLedgerName,PlaceOfSupply,Reference,ReferenceDate # Existing ones
+        - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME # Voucher level
+        - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE # Export details
+        - # Add other direct voucher level tags here as needed.
       filters:
         - NOT $IsCancelled
         - NOT $IsOptional
@@ -638,6 +645,28 @@ transaction:
         - name: is_order_voucher
           field: if $$IsOrderVch:$VoucherTypeName then 1 else 0
           type: logical
+        - name: is_cancelled_xml # Renamed to avoid conflict if $IsCancelled filter is removed
+          field: IsCancelled
+          type: logical
+        - name: irn
+          field: IRN
+          type: text
+        - name: irn_ack_date
+          field: IRNACKDATE
+          type: date # Or text if you prefer to handle conversion in SQL
+        - name: cost_centre_name # For branch_name
+          field: COSTCENTRENAME
+          type: text
+        - name: port_code # For shipping_port_code_export
+          field: PORTCODE
+          type: text
+        - name: shipping_bill_no # For shipping_bill_number_export
+          field: SHIPPINGBILLNO
+          type: text
+        - name: shipping_bill_date # For shipping_bill_date_export
+          field: SHIPPINGBILLDATE
+          type: date # Or text
+
     - name: trn_accounting
       collection: Voucher.AllLedgerEntries
       nature: Derived
@@ -662,6 +691,15 @@ transaction:
           type: amount
         - name: currency
           field: $$Currency:$Amount
+          type: text
+        - name: is_reverse_charge_applicable_line
+          field: GSTOVRDNISREVCHARGEAPPL # Tag found in LEDGERENTRIES.LIST
+          type: text # Will store "Applicable" or "Not Applicable"
+        - name: gst_nature_of_supply_line # For export nature if specified at service ledger level
+          field: GSTOVRDNSTOREDNATURE
+          type: text
+        - name: txn_hsn_sac # <<< NEW FIELD
+          field: GSTHSNNAME # Assuming this is the SAC for the service ledger line from XML
           type: text
     - name: trn_inventory
       collection: Voucher.AllInventoryEntries
@@ -706,6 +744,15 @@ transaction:
         - name: order_duedate
           field: OrderDueDate
           type: date
+        - name: is_reverse_charge_applicable_line
+          field: GSTOVRDNISREVCHARGEAPPL # Tag found in ALLINVENTORYENTRIES.LIST
+          type: text # Will store "Applicable" or "Not Applicable"
+        - name: gst_nature_of_supply_line # For export nature on item line
+          field: GSTOVRDNSTOREDNATURE # e.g., "Exports - LUT/Bond", "Exports - Taxable"
+          type: text
+        - name: txn_hsn_sac # <<< NEW FIELD
+          field: GSTHSNNAME # HSN/SAC code from the item line's GST details in XML
+          type: text
     - name: trn_cost_centre
       collection: Voucher.AllLedgerEntries.CostCentreAllocations
       nature: Derived
@@ -980,3 +1027,69 @@ transaction:
         - name: type_value
           field: AttdTypeValue
           type: quantity
+    - name: trn_voucher_ewaybill # New table
+      collection: Voucher.EwayBillDetails # Accessing the sub-list
+      nature: Derived
+      fetch:
+        - BILLNUMBER, BILLDATE # etc.
+      filters:
+        - NOT $IsCancelled # from parent voucher
+        - NOT $IsOptional  # from parent voucher
+      fields:
+        - name: guid # Foreign key to trn_voucher.guid
+          field: Guid # Guid of the parent Voucher
+          type: text
+        - name: eway_bill_no
+          field: BILLNUMBER
+          type: text
+        - name: eway_bill_date
+          field: BILLDATE
+          type: date
+
+    
+    - name: trn_inventory_taxdetails # <<< NEW TABLE DEFINITION
+      collection: Voucher.AllInventoryEntries.RATEDETAILS # Path to the list of rates for each inventory item
+      nature: Derived
+      fetch:
+        - AllInventoryEntries # To potentially access parent item name if needed by loader syntax
+      filters:
+        - NOT $IsCancelled # Filter based on parent voucher's status
+        - NOT $IsOptional  # Filter based on parent voucher's status
+        - $$NumItems:AllInventoryEntries > 0
+      fields:
+        - name: voucher_guid
+          field: Guid # Guid of the main Voucher object
+          type: text
+        - name: stock_item_name # CRUCIAL: Name of the stock item this rate belongs to   
+          field: StockItemName 
+          type: text
+        - name: gst_duty_head
+          field: GSTRATEDUTYHEAD # e.g., CGST, SGST/UTGST, IGST
+          type: text
+        - name: gst_rate
+          field: GSTRATE         # The actual rate value
+          type: text # Or text if you prefer and convert in SQL
+
+
+    - name: trn_accounting_taxdetails 
+      collection: Voucher.AllLedgerEntries.RATEDETAILS
+      nature: Derived
+      fetch:
+        - AllLedgerEntries 
+      filters:
+        - NOT $IsCancelled # Filter based on parent voucher
+        - NOT $IsOptional  # Filter based on parent voucher
+        - $$NumItems:AllLedgerEntries > 0
+      fields:
+        - name: voucher_guid
+          field: Guid # Guid of the main Voucher object
+          type: text
+        - name: Ledger_name # CRUCIAL: Name of the ledger this rate belongs to
+          field: LedgerName
+          type: text
+        - name: gst_duty_head
+          field: GSTRATEDUTYHEAD
+          type: text
+        - name: gst_rate
+          field: GSTRATE
+          type: text # Or text

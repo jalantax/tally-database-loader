@@ -1,383 +1,379 @@
-create table config
-(
- name varchar(64) not null primary key,
- value varchar(1024)
+-- Master Tables
+CREATE TABLE mst_group (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    primary_group VARCHAR(1024) NOT NULL DEFAULT 	'',
+    is_revenue SMALLINT,
+    is_deemedpositive SMALLINT,
+    is_reserved SMALLINT,
+    affects_gross_profit SMALLINT,
+    sort_position INTEGER
 );
 
-create table mst_group
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- primary_group varchar(1024) not null default '',
- is_revenue smallint,
- is_deemedpositive smallint,
- is_reserved smallint,
- affects_gross_profit smallint,
- sort_position int
+CREATE TABLE mst_ledger (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    alias VARCHAR(256) NOT NULL DEFAULT '',
+    description TEXT,
+    notes TEXT,
+    is_revenue SMALLINT,
+    is_deemedpositive SMALLINT,
+    opening_balance DECIMAL(17,2) DEFAULT 0,
+    closing_balance DECIMAL(17,2) DEFAULT 0,
+    mailing_name VARCHAR(256) NOT NULL DEFAULT '',
+    mailing_address TEXT,
+    mailing_state VARCHAR(256) NOT NULL DEFAULT '',
+    mailing_country VARCHAR(256) NOT NULL DEFAULT '',
+    mailing_pincode VARCHAR(64) NOT NULL DEFAULT '',
+    email VARCHAR(256) NOT NULL DEFAULT '',
+    it_pan VARCHAR(64) NOT NULL DEFAULT '',
+    gstn VARCHAR(64) NOT NULL DEFAULT '',
+    gst_registration_type VARCHAR(64) NOT NULL DEFAULT '',
+    gst_supply_type VARCHAR(64) NOT NULL DEFAULT '',
+    gst_duty_head VARCHAR(16) NOT NULL DEFAULT '',
+    tax_rate NUMERIC(9,4) DEFAULT 0,
+    bank_account_holder VARCHAR(256) NOT NULL DEFAULT '',
+    bank_account_number VARCHAR(64) NOT NULL DEFAULT '',
+    bank_ifsc VARCHAR(64) NOT NULL DEFAULT '',
+    bank_swift VARCHAR(64) NOT NULL DEFAULT '',
+    bank_name VARCHAR(64) NOT NULL DEFAULT '',
+    bank_branch VARCHAR(64) NOT NULL DEFAULT '',
+    bill_credit_period INTEGER DEFAULT 0,
+    gstapplicable TEXT -- <<< NEW FIELD ADDED
 );
 
-create table mst_ledger
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- alias varchar(256) not null default '',
- description varchar(64) not null default '',
- notes varchar(64) not null default '',
- is_revenue smallint,
- is_deemedpositive smallint,
- opening_balance decimal(17,2) default 0,
- closing_balance decimal(17,2) default 0,
- mailing_name varchar(256) not null default '',
- mailing_address varchar(1024) not null default '',
- mailing_state varchar(256) not null default '',
- mailing_country varchar(256) not null default '',
- mailing_pincode varchar(64) not null default '',
- email varchar(256) not null default '',
- it_pan varchar(64) not null default '',
- gstn varchar(64) not null default '',
- gst_registration_type varchar(64) not null default '',
- gst_supply_type varchar(64) not null default '',
- gst_duty_head varchar(16) not null default '',
- tax_rate decimal(9,4) default 0,
- bank_account_holder varchar(256) not null default '',
- bank_account_number varchar(64) not null default '',
- bank_ifsc varchar(64) not null default '',
- bank_swift varchar(64) not null default '',
- bank_name varchar(64) not null default '',
- bank_branch varchar(64) not null default '',
- bill_credit_period int not null default 0
+CREATE TABLE mst_vouchertype (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    numbering_method VARCHAR(64) NOT NULL DEFAULT '',
+    is_deemedpositive SMALLINT,
+    affects_stock SMALLINT
 );
 
-create table mst_vouchertype
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- numbering_method varchar(64) not null default '',
- is_deemedpositive smallint,
- affects_stock smallint
+CREATE TABLE mst_uom (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    formalname VARCHAR(256) NOT NULL DEFAULT '',
+    is_simple_unit SMALLINT NOT NULL,
+    base_units VARCHAR(1024) NOT NULL DEFAULT '',
+    additional_units VARCHAR(1024) NOT NULL DEFAULT '',
+    conversion INTEGER NOT NULL DEFAULT 0
 );
 
-create table mst_uom
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- formalname varchar(256) not null default '',
- is_simple_unit smallint not null,
- base_units varchar(1024) not null,
- additional_units varchar(1024) not null,
- conversion decimal(15,4) not null
+CREATE TABLE mst_godown (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    address TEXT
 );
 
-create table mst_godown
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- address varchar(1024) not null default ''
+CREATE TABLE mst_stock_group (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT ''
 );
 
-create table mst_stock_category
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default ''
+CREATE TABLE mst_stock_item (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    alias VARCHAR(256) NOT NULL DEFAULT '',
+    description TEXT,
+    notes TEXT,
+    part_number VARCHAR(256) NOT NULL DEFAULT '',
+    uom VARCHAR(32) NOT NULL DEFAULT '',
+    alternate_uom VARCHAR(32) NOT NULL DEFAULT '',
+    conversion INTEGER NOT NULL DEFAULT 0,
+    opening_balance NUMERIC(15,4) DEFAULT 0,
+    opening_rate NUMERIC(15,4) DEFAULT 0,
+    opening_value DECIMAL(17,2) DEFAULT 0,
+    closing_balance NUMERIC(15,4) DEFAULT 0,
+    closing_rate NUMERIC(15,4) DEFAULT 0,
+    closing_value DECIMAL(17,2) DEFAULT 0,
+    costing_method VARCHAR(32) NOT NULL DEFAULT '',
+    gst_type_of_supply VARCHAR(32) DEFAULT '',
+    gst_hsn_code VARCHAR(64) DEFAULT '',
+    gst_hsn_description VARCHAR(256) DEFAULT '',
+    gst_rate NUMERIC(9,4) DEFAULT 0,
+    gst_taxability VARCHAR(32) DEFAULT ''
 );
 
-create table mst_stock_group
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default ''
+CREATE TABLE mst_cost_category (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    allocate_revenue SMALLINT,
+    allocate_non_revenue SMALLINT
 );
 
-create table mst_stock_item
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- category varchar(1024) not null default '',
- alias varchar(256) not null default '',
- description varchar(64) not null default '',
- notes varchar(64) not null default '',
- part_number varchar(256) not null default '',
- uom varchar(32) not null default '',
- alternate_uom varchar(32) not null default '',
- conversion decimal(15,4) not null default 0,
- opening_balance decimal(15,4) default 0,
- opening_rate decimal(15,4) default 0,
- opening_value decimal(17,2) default 0,
- closing_balance decimal(15,4) default 0,
- closing_rate decimal(15,4) default 0,
- closing_value decimal(17,2) default 0,
- costing_method varchar(32) not null default '',
- gst_type_of_supply varchar(32) default '',
- gst_hsn_code varchar(64) default '',
- gst_hsn_description varchar(256) default '',
- gst_rate decimal(9,4) default 0,
- gst_taxability varchar(32) default ''
+CREATE TABLE mst_cost_centre (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    category VARCHAR(1024) NOT NULL DEFAULT ''
 );
 
-create table mst_cost_category
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- allocate_revenue smallint,
- allocate_non_revenue smallint
+CREATE TABLE mst_attendance_type (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    uom VARCHAR(32) NOT NULL DEFAULT '',
+    attendance_type VARCHAR(64) NOT NULL DEFAULT '',
+    attendance_period VARCHAR(64) NOT NULL DEFAULT ''
 );
 
-create table mst_cost_centre
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- category varchar(1024) not null default ''
+CREATE TABLE mst_employee (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    id_number VARCHAR(256) NOT NULL DEFAULT '',
+    date_of_joining DATE,
+    date_of_release DATE,
+    designation VARCHAR(64) NOT NULL DEFAULT '',
+    function_role VARCHAR(64) NOT NULL DEFAULT '',
+    location VARCHAR(256) NOT NULL DEFAULT '',
+    gender VARCHAR(32) NOT NULL DEFAULT '',
+    date_of_birth DATE,
+    blood_group VARCHAR(32) NOT NULL DEFAULT '',
+    father_mother_name VARCHAR(256) NOT NULL DEFAULT '',
+    spouse_name VARCHAR(256) NOT NULL DEFAULT '',
+    address TEXT,
+    mobile VARCHAR(32) NOT NULL DEFAULT '',
+    email VARCHAR(64) NOT NULL DEFAULT '',
+    pan VARCHAR(32) NOT NULL DEFAULT '',
+    aadhar VARCHAR(32) NOT NULL DEFAULT '',
+    uan VARCHAR(32) NOT NULL DEFAULT '',
+    pf_number VARCHAR(32) NOT NULL DEFAULT '',
+    pf_joining_date DATE,
+    pf_relieving_date DATE,
+    pr_account_number VARCHAR(32) NOT NULL DEFAULT ''
 );
 
-create table mst_attendance_type
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- uom varchar(32) not null default '',
- attendance_type varchar(64) not null default '',
- attendance_period varchar(64) not null default ''
+CREATE TABLE mst_payhead (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT '',
+    payslip_name VARCHAR(1024) NOT NULL DEFAULT '',
+    pay_type VARCHAR(64) NOT NULL DEFAULT '',
+    income_type VARCHAR(64) NOT NULL DEFAULT '',
+    calculation_type VARCHAR(32) NOT NULL DEFAULT '',
+    leave_type VARCHAR(64) NOT NULL DEFAULT '',
+    calculation_period VARCHAR(32) NOT NULL DEFAULT ''
 );
 
-create table mst_employee
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- id_number varchar(256) not null default '',
- date_of_joining date,
- date_of_release date,
- designation varchar(64) not null default '',
- function_role varchar(64) not null default '',
- location varchar(256) not null default '',
- gender varchar(32) not null default '',
- date_of_birth date,
- blood_group varchar(32) not null default '',
- father_mother_name varchar(256) not null default '',
- spouse_name varchar(256) not null default '',
- address varchar(256) not null default '',
- mobile varchar(32) not null default '',
- email varchar(64) not null default '',
- pan varchar(32) not null default '',
- aadhar varchar(32) not null default '',
- uan varchar(32) not null default '',
- pf_number varchar(32) not null default '',
- pf_joining_date date,
- pf_relieving_date date,
- pr_account_number varchar(32) not null default ''
+CREATE TABLE mst_gst_effective_rate (
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    applicable_from DATE,
+    hsn_description VARCHAR(256) NOT NULL DEFAULT '',
+    hsn_code VARCHAR(64) NOT NULL DEFAULT '',
+    rate NUMERIC(9,4) DEFAULT 0,
+    is_rcm_applicable SMALLINT,
+    nature_of_transaction VARCHAR(64) NOT NULL DEFAULT '',
+    nature_of_goods VARCHAR(64) NOT NULL DEFAULT '',
+    supply_type VARCHAR(64) NOT NULL DEFAULT '',
+    taxability VARCHAR(64) NOT NULL DEFAULT ''
 );
 
-create table mst_payhead
-(
- guid varchar(64) not null primary key,
- name varchar(1024) not null default '',
- parent varchar(1024) not null default '',
- payslip_name varchar(1024) not null default '',
- pay_type varchar(64) not null default '',
- income_type varchar(64) not null default '',
- calculation_type varchar(32) not null default '',
- leave_type varchar(64) not null default '',
- calculation_period varchar(32) not null default ''
+CREATE TABLE mst_opening_batch_allocation (
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    opening_balance DECIMAL(17,2) DEFAULT 0,
+    opening_rate NUMERIC(15,4) DEFAULT 0,
+    opening_value DECIMAL(17,2) DEFAULT 0,
+    godown VARCHAR(1024) NOT NULL DEFAULT '',
+    manufactured_on DATE
 );
 
-create table mst_gst_effective_rate
-(
- item varchar(1024) not null default '',
- applicable_from date,
- hsn_description varchar(256) not null default '',
- hsn_code varchar(64) not null default '',
- rate decimal(9,4) default 0,
- is_rcm_applicable smallint,
- nature_of_transaction varchar(64) not null default '',
- nature_of_goods varchar(64) not null default '',
- supply_type varchar(64) not null default '',
- taxability varchar(64) not null default ''
+CREATE TABLE mst_opening_bill_allocation (
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    opening_balance DECIMAL(17,2) DEFAULT 0,
+    bill_date DATE,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    bill_credit_period INTEGER DEFAULT 0,
+    is_advance SMALLINT
 );
 
-create table mst_opening_batch_allocation
-(
- name varchar(1024) not null default '',
- item varchar(1024) not null default '',
- opening_balance decimal(15,4) default 0,
- opening_rate decimal(15,4) default 0,
- opening_value decimal(17,2) default 0,
- godown varchar(1024) not null default '',
- manufactured_on date
+CREATE TABLE trn_closingstock_ledger (
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    stock_date DATE,
+    stock_value DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
-create table mst_opening_bill_allocation
-(
- ledger varchar(1024) not null default '',
- opening_balance decimal(17,4) default 0,
- bill_date date,
- name varchar(1024) not null default '',
- bill_credit_period int not null default 0,
- is_advance smallint
+CREATE TABLE mst_stockitem_standard_cost (
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    date DATE,
+    rate NUMERIC(15,4) DEFAULT 0
 );
 
-create table trn_closingstock_ledger
-(
- ledger varchar(1024) not null default '',
- stock_date date,
- stock_value decimal(17,2) not null default 0
+CREATE TABLE mst_stockitem_standard_price (
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    date DATE,
+    rate NUMERIC(15,4) DEFAULT 0
 );
 
-create table mst_stockitem_standard_cost
-(
- item varchar(1024) not null default '',
- date date,
- rate decimal(15,4) default 0
+-- Transaction Tables
+CREATE TABLE trn_voucher (
+    guid VARCHAR(64) PRIMARY KEY,
+    date DATE NOT NULL,
+    voucher_type VARCHAR(1024) NOT NULL,
+    voucher_number VARCHAR(64) NOT NULL DEFAULT '',
+    reference_number VARCHAR(64) NOT NULL DEFAULT '',
+    reference_date DATE,
+    narration TEXT,
+    party_name VARCHAR(256) NOT NULL DEFAULT '',
+    place_of_supply VARCHAR(256) NOT NULL DEFAULT '',
+    is_invoice SMALLINT,
+    is_accounting_voucher SMALLINT,
+    is_inventory_voucher SMALLINT,
+    is_order_voucher SMALLINT,
+    is_cancelled_xml SMALLINT,
+    irn VARCHAR(100),
+    irn_ack_date DATE,
+    cost_centre_name VARCHAR(256),
+    port_code VARCHAR(64),
+    shipping_bill_no VARCHAR(64),
+    shipping_bill_date DATE
 );
 
-create table mst_stockitem_standard_price
-(
- item varchar(1024) not null default '',
- date date,
- rate decimal(15,4) default 0
+CREATE TABLE trn_accounting (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    amount_forex DECIMAL(17,2) NOT NULL DEFAULT 0,
+    currency VARCHAR(16) NOT NULL DEFAULT '',
+    is_reverse_charge_applicable_line VARCHAR(30),
+    gst_nature_of_supply_line VARCHAR(100),
+    txn_hsn_sac VARCHAR(20)
 );
 
-create table trn_voucher
-(
- guid varchar(64) not null primary key,
- date date not null,
- voucher_type varchar(1024) not null,
- voucher_number varchar(64) not null default '',
- reference_number varchar(64) not null default '',
- reference_date date,
- narration varchar(4000) not null default '',
- party_name varchar(256) not null,
- place_of_supply varchar(256) not null,
- is_invoice smallint,
- is_accounting_voucher smallint,
- is_inventory_voucher smallint,
- is_order_voucher smallint
+CREATE TABLE trn_inventory (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    quantity NUMERIC(15,4) NOT NULL DEFAULT 0,
+    rate NUMERIC(15,4) NOT NULL DEFAULT 0,
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    additional_amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    discount_amount NUMERIC(17,2) NOT NULL DEFAULT 0,
+    godown VARCHAR(1024),
+    tracking_number VARCHAR(256),
+    order_number VARCHAR(256),
+    order_duedate DATE,
+    is_reverse_charge_applicable_line VARCHAR(30),
+    gst_nature_of_supply_line VARCHAR(100),
+    txn_hsn_sac VARCHAR(20)
 );
 
-create table trn_accounting
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- amount decimal(17,2) not null default 0,
- amount_forex decimal(17,2) not null default 0,
- currency varchar(16) not null default ''
+CREATE TABLE trn_cost_centre (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    costcentre VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
-create table trn_inventory
-(
- guid varchar(64) not null default '',
- item varchar(1024) not null default '',
- quantity decimal(15,4) not null default 0,
- rate decimal(15,4) not null default 0,
- amount decimal(17,2) not null default 0,
- additional_amount decimal(17,2) not null default 0,
- discount_amount decimal(17,2) not null default 0,
- godown varchar(1024),
- tracking_number varchar(256),
- order_number varchar(256),
- order_duedate date
+CREATE TABLE trn_cost_category_centre (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    costcategory VARCHAR(1024) NOT NULL DEFAULT '',
+    costcentre VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
-create table trn_cost_centre
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- costcentre varchar(1024) not null default '',
- amount decimal(17,2) not null default 0
+CREATE TABLE trn_cost_inventory_category_centre (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    costcategory VARCHAR(1024) NOT NULL DEFAULT '',
+    costcentre VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
-create table trn_cost_category_centre
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- costcategory varchar(1024) not null default '',
- costcentre varchar(1024) not null default '',
- amount decimal(17,2) not null default 0
+CREATE TABLE trn_bill (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    billtype VARCHAR(256) NOT NULL DEFAULT '',
+    bill_credit_period INTEGER DEFAULT 0
 );
 
-create table trn_cost_inventory_category_centre
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- item varchar(1024) not null default '',
- costcategory varchar(1024) not null default '',
- costcentre varchar(1024) not null default '',
- amount decimal(17,2) not null default 0
+CREATE TABLE trn_bank (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    transaction_type VARCHAR(32) NOT NULL DEFAULT '',
+    instrument_date DATE,
+    instrument_number VARCHAR(1024) NOT NULL DEFAULT '',
+    bank_name VARCHAR(64) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    bankers_date DATE
 );
 
-create table trn_bill
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- name varchar(1024) not null default '',
- amount decimal(17,2) not null default 0,
- billtype varchar(256) not null default '',
- bill_credit_period int not null default 0
+CREATE TABLE trn_batch (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    quantity NUMERIC(15,4) NOT NULL DEFAULT 0,
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    godown VARCHAR(1024),
+    destination_godown VARCHAR(1024),
+    tracking_number VARCHAR(1024)
 );
 
-create table trn_bank
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- transaction_type varchar(32) not null default '',
- instrument_date date,
- instrument_number varchar(1024) not null default '',
- bank_name varchar(64) not null default '',
- amount decimal(17,2) not null default 0,
- bankers_date date
+CREATE TABLE trn_inventory_accounting (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    additional_allocation_type VARCHAR(32) NOT NULL DEFAULT ''
 );
 
-create table trn_batch
-(
- guid varchar(64) not null default '',
- item varchar(1024) not null default '',
- name varchar(1024) not null default '',
- quantity decimal(15,4) not null default 0,
- amount decimal(17,2) not null default 0,
- godown varchar(1024),
- destination_godown varchar(1024),
- tracking_number varchar(1024)
+CREATE TABLE trn_employee (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    category VARCHAR(1024) NOT NULL DEFAULT '',
+    employee_name VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    employee_sort_order INTEGER NOT NULL DEFAULT 0
 );
 
-create table trn_inventory_accounting
-(
- guid varchar(64) not null default '',
- ledger varchar(1024) not null default '',
- amount decimal(17,2) not null default 0,
- additional_allocation_type varchar(32) not null default ''
+CREATE TABLE trn_payhead (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    category VARCHAR(1024) NOT NULL DEFAULT '',
+    employee_name VARCHAR(1024) NOT NULL DEFAULT '',
+    employee_sort_order INTEGER NOT NULL DEFAULT 0,
+    payhead_name VARCHAR(1024) NOT NULL DEFAULT '',
+    payhead_sort_order INTEGER NOT NULL DEFAULT 0,
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
-create table trn_employee
-(
- guid varchar(64) not null default '',
- category varchar(1024) not null default '',
- employee_name varchar(1024) not null default '',
- amount decimal(17,2) not null default 0,
- employee_sort_order int not null default 0
+CREATE TABLE trn_attendance (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    employee_name VARCHAR(1024) NOT NULL DEFAULT '',
+    attendancetype_name VARCHAR(1024) NOT NULL DEFAULT '',
+    time_value DECIMAL(17,2) NOT NULL DEFAULT 0,
+    type_value NUMERIC(17,4) NOT NULL DEFAULT 0
 );
 
-create table trn_payhead
-(
- guid varchar(64) not null default '',
- category varchar(1024) not null default '',
- employee_name varchar(1024) not null default '',
- employee_sort_order int not null default 0,
- payhead_name varchar(1024) not null default '',
- payhead_sort_order int not null default 0,
- amount decimal(17,2) not null default 0
+CREATE TABLE trn_voucher_ewaybill (
+    guid VARCHAR(64) NOT NULL,
+    eway_bill_no TEXT,
+    eway_bill_date DATE
 );
 
-create table trn_attendance
-(
- guid varchar(64) not null default '',
- employee_name varchar(1024) not null default '',
- attendancetype_name varchar(1024) not null default '',
- time_value decimal(17,2) not null default 0,
- type_value decimal(17,2) not null default 0
+CREATE TABLE trn_inventory_taxdetails (
+    voucher_guid VARCHAR(64) NOT NULL,
+    stock_item_name VARCHAR(1024),
+    gst_duty_head TEXT,
+    gst_rate TEXT
+);
+
+CREATE TABLE trn_accounting_taxdetails (
+    voucher_guid VARCHAR(64) NOT NULL,
+    ledger_name VARCHAR(1024),
+    gst_duty_head TEXT,
+    gst_rate TEXT
+);
+
+CREATE TABLE config (
+    name VARCHAR(64) PRIMARY KEY,
+    value VARCHAR(1024)
 );

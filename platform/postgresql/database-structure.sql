@@ -70,6 +70,12 @@ CREATE TABLE mst_godown (
     address TEXT
 );
 
+CREATE TABLE mst_stock_category (
+    guid VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(1024) NOT NULL DEFAULT '',
+    parent VARCHAR(1024) NOT NULL DEFAULT ''
+);
+
 CREATE TABLE mst_stock_group (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',
@@ -80,6 +86,7 @@ CREATE TABLE mst_stock_item (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
+    category VARCHAR(1024) NOT NULL DEFAULT '',
     alias VARCHAR(256) NOT NULL DEFAULT '',
     description TEXT,
     notes TEXT,

@@ -1,12 +1,12 @@
 {
     "database": {
-        "technology": "mssql",
-        "server": "localhost",
-        "port": 0,
+        "technology": "postgres",
+        "server": "192.168.6.13",
+        "port": 5432,
         "ssl": false,
-        "schema": "tallydb",
-        "username": "sa",
-        "password": "admin",
+        "schema": "tallydata_default",
+        "username": "tushar",
+        "password": "micro87",
         "loadmethod": "file"
     },
     "tally": {

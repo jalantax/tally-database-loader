@@ -41,7 +41,10 @@ CREATE TABLE mst_ledger (
     bank_name VARCHAR(64) NOT NULL DEFAULT '',
     bank_branch VARCHAR(64) NOT NULL DEFAULT '',
     bill_credit_period INTEGER DEFAULT 0,
-    gstapplicable TEXT -- <<< NEW FIELD ADDED
+    gstapplicable TEXT,
+    appropriate_for VARCHAR(64) DEFAULT '',
+    gst_appropriate_to VARCHAR(100) DEFAULT '',
+    excise_alloc_type VARCHAR(64) DEFAULT ''
 );
 
 CREATE TABLE mst_vouchertype (
@@ -252,7 +255,10 @@ CREATE TABLE trn_accounting (
     currency VARCHAR(16) NOT NULL DEFAULT '',
     is_reverse_charge_applicable_line VARCHAR(30),
     gst_nature_of_supply_line VARCHAR(100),
-    txn_hsn_sac VARCHAR(20)
+    txn_hsn_sac VARCHAR(20),
+    appropriate_for VARCHAR(64) DEFAULT '',
+    gst_appropriate_to VARCHAR(100) DEFAULT '',
+    excise_alloc_type VARCHAR(64) DEFAULT ''
 );
 
 CREATE TABLE trn_inventory (

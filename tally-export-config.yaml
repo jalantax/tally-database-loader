@@ -124,6 +124,15 @@ master:
         - name: gstapplicable
           field: GSTAPPLICABLE
           type: text
+        - name: appropriate_for
+          field: APPROPRIATEFOR
+          type: text
+        - name: gst_appropriate_to
+          field: GSTAPPROPRIATETO
+          type: text
+        - name: excise_alloc_type
+          field: EXCISEALLOCTYPE
+          type: text
 
     - name: mst_vouchertype
       collection: VoucherType
@@ -700,6 +709,18 @@ transaction:
           type: text
         - name: txn_hsn_sac # <<< NEW FIELD
           field: GSTHSNNAME # Assuming this is the SAC for the service ledger line from XML
+          type: text
+        - name: appropriate_for
+          field: APPROPRIATEFOR
+          type: text
+        - name: gst_appropriate_to
+          field: GSTAPPROPRIATETO
+          type: text
+        - name: excise_alloc_type
+          field: EXCISEALLOCTYPE
+          type: text
+        - name: gst_taxability_line
+          field: GSTOVRDNTAXABILITY # Captures "Taxable", "Nil Rated", "Exempt", etc.
           type: text
     - name: trn_inventory
       collection: Voucher.AllInventoryEntries

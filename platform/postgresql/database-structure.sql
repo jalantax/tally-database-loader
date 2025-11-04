@@ -1,4 +1,4 @@
--- Master Tables
+-- Master Tables-JTCedited
 CREATE TABLE mst_group (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',

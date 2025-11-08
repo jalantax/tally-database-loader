@@ -1,4 +1,4 @@
--- Master Tables-JTC edited
+-- Master Tables-JTC edited - 4/11/25
 CREATE TABLE mst_group (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',
@@ -185,6 +185,25 @@ CREATE TABLE mst_gst_effective_rate (
     supply_type VARCHAR(64) NOT NULL DEFAULT '',
     taxability VARCHAR(64) NOT NULL DEFAULT ''
 );
+
+CREATE TABLE mst_ledger_gst_reg_history (
+    ledger_name VARCHAR(1024) NOT NULL,
+    applicable_from DATE NOT NULL,
+    gst_registration_type VARCHAR(64),
+    gstin VARCHAR(64),
+    state VARCHAR(256),
+    place_of_supply VARCHAR(256)
+    -- NOTE: No PRIMARY KEY to allow Tally duplicates (same ledger, same date)
+    -- Query deduplication handled via DISTINCT ON in sales_register_queries.py
+);
+
+-- Performance index for date-based lookups (supports ORDER BY applicable_from DESC)
+CREATE INDEX idx_ledger_gst_history_lookup
+    ON mst_ledger_gst_reg_history(TRIM(ledger_name), applicable_from DESC);
+
+-- Additional index for uniqueness checking (helps identify true duplicates vs data quality issues)
+CREATE INDEX idx_ledger_gst_history_full
+    ON mst_ledger_gst_reg_history(ledger_name, applicable_from, gst_registration_type, gstin);
 
 CREATE TABLE mst_opening_batch_allocation (
     name VARCHAR(1024) NOT NULL DEFAULT '',

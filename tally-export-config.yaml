@@ -500,6 +500,30 @@ master:
         - name: taxability
           field: Taxability
           type: text
+    - name: mst_ledger_gst_reg_history
+      collection: Ledger.LedGSTRegDetails
+      nature: Derived
+      filters:
+        - $$NumItems:LedGSTRegDetails > 0
+      fields:
+        - name: ledger_name
+          field: ..Name
+          type: text
+        - name: applicable_from
+          field: Applicablefrom
+          type: date
+        - name: gst_registration_type
+          field: Gstregistrationtype
+          type: text
+        - name: gstin
+          field: GSTIN
+          type: text
+        - name: state
+          field: STATE
+          type: text
+        - name: place_of_supply
+          field: PlaceOfSupply
+          type: text
     - name: mst_opening_batch_allocation
       collection: StockItem.BatchAllocations
       nature: Derived

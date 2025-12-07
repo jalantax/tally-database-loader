@@ -791,7 +791,7 @@ transaction:
       collection: Voucher
       nature: Primary
       fetch:
-        - AlterId,Narration,PartyLedgerName,PlaceOfSupply,Reference,ReferenceDate
+        - AlterId,Narration,PartyLedgerName,PartyGstin,PlaceOfSupply,Reference,ReferenceDate
       filters:
         - NOT $IsCancelled
         - NOT $IsOptional
@@ -828,6 +828,9 @@ transaction:
           type: text
         - name: _party_name
           field: if $$IsEmpty:$PartyLedgerName then "" else $Guid:Ledger:$PartyLedgerName
+          type: text
+        - name: party_gstin
+          field: PartyGstin
           type: text
         - name: place_of_supply
           field: PlaceOfSupply

@@ -47,6 +47,17 @@ CREATE TABLE mst_ledger (
     excise_alloc_type VARCHAR(64) DEFAULT ''
 );
 
+-- GST Registration History for Ledgers (tracks GSTIN changes over time)
+-- Used by sales register query to get correct GSTIN at transaction date
+CREATE TABLE mst_ledger_gst_reg_history (
+    id SERIAL PRIMARY KEY,
+    ledger_name VARCHAR(1024) NOT NULL DEFAULT '',
+    gstin VARCHAR(64) NOT NULL DEFAULT '',
+    gst_registration_type VARCHAR(64) NOT NULL DEFAULT '',
+    applicable_from DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE mst_vouchertype (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',
@@ -63,7 +74,7 @@ CREATE TABLE mst_uom (
     is_simple_unit SMALLINT NOT NULL,
     base_units VARCHAR(1024) NOT NULL DEFAULT '',
     additional_units VARCHAR(1024) NOT NULL DEFAULT '',
-    conversion INTEGER NOT NULL DEFAULT 0
+    conversion NUMERIC(15,4) NOT NULL DEFAULT 0
 );
 
 CREATE TABLE mst_godown (
@@ -96,7 +107,7 @@ CREATE TABLE mst_stock_item (
     part_number VARCHAR(256) NOT NULL DEFAULT '',
     uom VARCHAR(32) NOT NULL DEFAULT '',
     alternate_uom VARCHAR(32) NOT NULL DEFAULT '',
-    conversion INTEGER NOT NULL DEFAULT 0,
+    conversion NUMERIC(15,4) NOT NULL DEFAULT 0,
     opening_balance NUMERIC(15,4) DEFAULT 0,
     opening_rate NUMERIC(15,4) DEFAULT 0,
     opening_value DECIMAL(17,2) DEFAULT 0,
@@ -252,6 +263,7 @@ CREATE TABLE trn_voucher (
     reference_date DATE,
     narration TEXT,
     party_name VARCHAR(256) NOT NULL DEFAULT '',
+    party_gstin VARCHAR(15) NOT NULL DEFAULT '',
     place_of_supply VARCHAR(256) NOT NULL DEFAULT '',
     is_invoice SMALLINT,
     is_accounting_voucher SMALLINT,
@@ -544,6 +556,42 @@ CREATE INDEX idx_trn_accounting_taxdetails_voucher_ledger
 CREATE INDEX idx_trn_accounting_taxdetails_duty_head
     ON trn_accounting_taxdetails(gst_duty_head)
     WHERE gst_duty_head IS NOT NULL;
+
+-- Index for mst_ledger_gst_reg_history (PartyLedgerGSTAtTransactionDate CTE)
+-- Critical for time-based GSTIN lookup with applicable_from date filtering
+CREATE INDEX idx_mst_ledger_gst_reg_history_ledger_date
+    ON mst_ledger_gst_reg_history(TRIM(ledger_name), applicable_from DESC);
+
+-- Additional index for GSTIN presence prioritization in tie-breaker
+CREATE INDEX idx_mst_ledger_gst_reg_history_gstin
+    ON mst_ledger_gst_reg_history(gstin)
+    WHERE gstin IS NOT NULL AND gstin != '';
+
+-- Composite index for trn_voucher combining date range with invoice filter
+-- More selective than partial index when querying non-invoice voucher types
+CREATE INDEX idx_trn_voucher_date_type_composite
+    ON trn_voucher(date, is_invoice, UPPER(TRIM(voucher_type)));
+
+-- Index for exact ledger name matching (avoids TRIM on join)
+-- Covers the most common join pattern: ta.ledger = ml.name
+CREATE INDEX idx_mst_ledger_name_exact ON mst_ledger(name);
+
+-- Index for exact item matching in trn_inventory
+CREATE INDEX idx_trn_inventory_item_exact ON trn_inventory(item);
+
+-- Index for trn_accounting exact ledger match (high cardinality column)
+CREATE INDEX idx_trn_accounting_ledger_exact ON trn_accounting(ledger);
+
+-- Covering index for trn_accounting with commonly needed columns
+-- Reduces need for table lookups during aggregations
+CREATE INDEX idx_trn_accounting_guid_amount_covering
+    ON trn_accounting(guid, amount, ledger, appropriate_for)
+    WHERE ABS(amount) > 0.005;
+
+-- Covering index for trn_inventory with commonly needed columns
+CREATE INDEX idx_trn_inventory_guid_amount_covering
+    ON trn_inventory(guid, amount, item, txn_hsn_sac)
+    WHERE ABS(amount) > 0.005;
 
 -- ============================================================================
 -- END OF PERFORMANCE INDEXES

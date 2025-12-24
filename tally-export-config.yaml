@@ -634,7 +634,7 @@ transaction:
         - Narration,PartyLedgerName,PlaceOfSupply,Reference,ReferenceDate # Existing ones
         - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME # Voucher level
         - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE # Export details
-        - # Add other direct voucher level tags here as needed.
+        - PartyGstin # Party GSTIN at transaction time
       filters:
         - NOT $IsCancelled
         - NOT $IsOptional
@@ -662,6 +662,9 @@ transaction:
           type: text
         - name: party_name
           field: PartyLedgerName
+          type: text
+        - name: party_gstin
+          field: PartyGstin
           type: text
         - name: place_of_supply
           field: PlaceOfSupply

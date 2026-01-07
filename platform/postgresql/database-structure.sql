@@ -47,17 +47,6 @@ CREATE TABLE mst_ledger (
     excise_alloc_type VARCHAR(64) DEFAULT ''
 );
 
--- GST Registration History for Ledgers (tracks GSTIN changes over time)
--- Used by sales register query to get correct GSTIN at transaction date
-CREATE TABLE mst_ledger_gst_reg_history (
-    id SERIAL PRIMARY KEY,
-    ledger_name VARCHAR(1024) NOT NULL DEFAULT '',
-    gstin VARCHAR(64) NOT NULL DEFAULT '',
-    gst_registration_type VARCHAR(64) NOT NULL DEFAULT '',
-    applicable_from DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE mst_vouchertype (
     guid VARCHAR(64) PRIMARY KEY,
     name VARCHAR(1024) NOT NULL DEFAULT '',

@@ -38,8 +38,8 @@ CREATE TABLE mst_ledger (
     bank_account_number VARCHAR(64) NOT NULL DEFAULT '',
     bank_ifsc VARCHAR(64) NOT NULL DEFAULT '',
     bank_swift VARCHAR(64) NOT NULL DEFAULT '',
-    bank_name VARCHAR(64) NOT NULL DEFAULT '',
-    bank_branch VARCHAR(64) NOT NULL DEFAULT '',
+    bank_name VARCHAR(256) NOT NULL DEFAULT '',
+    bank_branch VARCHAR(256) NOT NULL DEFAULT '',
     bill_credit_period INTEGER DEFAULT 0,
     gstapplicable TEXT,
     appropriate_for VARCHAR(64) DEFAULT '',
@@ -252,7 +252,7 @@ CREATE TABLE trn_voucher (
     reference_date DATE,
     narration TEXT,
     party_name VARCHAR(256) NOT NULL DEFAULT '',
-    party_gstin VARCHAR(15) NOT NULL DEFAULT '',
+    party_gstin VARCHAR(50) NOT NULL DEFAULT '',
     place_of_supply VARCHAR(256) NOT NULL DEFAULT '',
     is_invoice SMALLINT,
     is_accounting_voucher SMALLINT,
@@ -338,7 +338,7 @@ CREATE TABLE trn_bank (
     transaction_type VARCHAR(32) NOT NULL DEFAULT '',
     instrument_date DATE,
     instrument_number VARCHAR(1024) NOT NULL DEFAULT '',
-    bank_name VARCHAR(64) NOT NULL DEFAULT '',
+    bank_name VARCHAR(512) NOT NULL DEFAULT '',
     amount DECIMAL(17,2) NOT NULL DEFAULT 0,
     bankers_date DATE
 );

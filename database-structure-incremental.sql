@@ -312,7 +312,12 @@ create table trn_voucher
  is_invoice tinyint,
  is_accounting_voucher tinyint,
  is_inventory_voucher tinyint,
- is_order_voucher tinyint
+ is_order_voucher tinyint,
+ vch_gst_applicable tinyint,
+ vch_gst_included tinyint,
+ vch_gst_excluded tinyint,
+ cmp_gst_state nvarchar(64) not null default '',
+ stat_key nvarchar(256) not null default ''
 );
 
 create table trn_accounting
@@ -322,7 +327,10 @@ create table trn_accounting
  _ledger varchar(64) not null default '',
  amount decimal(17,2) not null default 0,
  amount_forex decimal(17,2) not null default 0,
- currency nvarchar(16) not null default ''
+ currency nvarchar(16) not null default '',
+ is_party_ledger tinyint,
+ is_cost_centre tinyint,
+ is_eligible_for_itc tinyint
 );
 
 create table trn_inventory
@@ -331,6 +339,7 @@ create table trn_inventory
  item nvarchar(1024) not null default '',
  _item varchar(64) not null default '',
  quantity decimal(15,4) not null default 0,
+ billed_qty decimal(15,4) not null default 0,
  rate decimal(15,4) not null default 0,
  amount decimal(17,2) not null default 0,
  additional_amount decimal(17,2) not null default 0,
@@ -361,7 +370,8 @@ create table trn_cost_category_centre
  _costcategory varchar(64) not null default '',
  costcentre nvarchar(1024) not null default '',
  _costcentre varchar(64) not null default '',
- amount decimal(17,2) not null default 0
+ amount decimal(17,2) not null default 0,
+ is_deemed_positive tinyint
 );
 
 create table trn_cost_inventory_category_centre

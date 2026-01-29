@@ -264,7 +264,12 @@ CREATE TABLE trn_voucher (
     cost_centre_name VARCHAR(256),
     port_code VARCHAR(64),
     shipping_bill_no VARCHAR(64),
-    shipping_bill_date DATE
+    shipping_bill_date DATE,
+    vch_gst_applicable SMALLINT,
+    vch_gst_included SMALLINT,
+    vch_gst_excluded SMALLINT,
+    cmp_gst_state VARCHAR(64) NOT NULL DEFAULT '',
+    stat_key VARCHAR(256) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE trn_accounting (
@@ -279,13 +284,17 @@ CREATE TABLE trn_accounting (
     appropriate_for VARCHAR(64) DEFAULT '',
     gst_appropriate_to VARCHAR(100) DEFAULT '',
     excise_alloc_type VARCHAR(64) DEFAULT '',
-    gst_taxability_line VARCHAR(30)
+    gst_taxability_line VARCHAR(30),
+    is_party_ledger SMALLINT,
+    is_cost_centre SMALLINT,
+    is_eligible_for_itc SMALLINT
 );
 
 CREATE TABLE trn_inventory (
     guid VARCHAR(64) NOT NULL DEFAULT '',
     item VARCHAR(1024) NOT NULL DEFAULT '',
     quantity NUMERIC(15,4) NOT NULL DEFAULT 0,
+    billed_qty NUMERIC(15,4) NOT NULL DEFAULT 0,
     rate NUMERIC(15,4) NOT NULL DEFAULT 0,
     amount DECIMAL(17,2) NOT NULL DEFAULT 0,
     additional_amount DECIMAL(17,2) NOT NULL DEFAULT 0,
@@ -311,7 +320,8 @@ CREATE TABLE trn_cost_category_centre (
     ledger VARCHAR(1024) NOT NULL DEFAULT '',
     costcategory VARCHAR(1024) NOT NULL DEFAULT '',
     costcentre VARCHAR(1024) NOT NULL DEFAULT '',
-    amount DECIMAL(17,2) NOT NULL DEFAULT 0
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    is_deemed_positive SMALLINT
 );
 
 CREATE TABLE trn_cost_inventory_category_centre (

@@ -635,6 +635,9 @@ transaction:
         - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME # Voucher level
         - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE # Export details
         - PartyGstin # Party GSTIN at transaction time
+        - VCHGSTSTATUSISAPPLICABLE,VCHGSTSTATUSISINCLUDED,VCHGSTSTATUSISEXCLUDED # GST status flags
+        - CMPGSTSTATE # Company GST state
+        - GST # For GST.LIST > STAT.LIST > STATKEY
       filters:
         - NOT $IsCancelled
         - NOT $IsOptional
@@ -702,6 +705,21 @@ transaction:
         - name: shipping_bill_date # For shipping_bill_date_export
           field: SHIPPINGBILLDATE
           type: date # Or text
+        - name: vch_gst_applicable
+          field: VCHGSTSTATUSISAPPLICABLE
+          type: logical
+        - name: vch_gst_included
+          field: VCHGSTSTATUSISINCLUDED
+          type: logical
+        - name: vch_gst_excluded
+          field: VCHGSTSTATUSISEXCLUDED
+          type: logical
+        - name: cmp_gst_state
+          field: CMPGSTSTATE
+          type: text
+        - name: stat_key
+          field: if $$NumItems:GST > 0 then $GST[First].STAT[First].STATKEY else ""
+          type: text
 
     - name: trn_accounting
       collection: Voucher.AllLedgerEntries
@@ -749,6 +767,15 @@ transaction:
         - name: gst_taxability_line
           field: GSTOVRDNTAXABILITY # Captures "Taxable", "Nil Rated", "Exempt", etc.
           type: text
+        - name: is_party_ledger
+          field: ISPARTYLEDGER
+          type: logical
+        - name: is_cost_centre
+          field: ISCOSTCENTRE
+          type: logical
+        - name: is_eligible_for_itc
+          field: ISELIGIBLEFORITC
+          type: logical
     - name: trn_inventory
       collection: Voucher.AllInventoryEntries
       nature: Derived
@@ -767,6 +794,9 @@ transaction:
           type: text
         - name: quantity
           field: ActualQty
+          type: quantity
+        - name: billed_qty
+          field: BilledQty
           type: quantity
         - name: rate
           field: Rate
@@ -848,6 +878,9 @@ transaction:
         - name: amount
           field: Amount
           type: amount
+        - name: is_deemed_positive
+          field: IsDeemedPositive
+          type: logical
     - name: trn_cost_inventory_category_centre
       collection: Voucher.AllLedgerEntries.InventoryAllocations.CategoryAllocations.CostCentreAllocations
       nature: Derived

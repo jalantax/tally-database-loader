@@ -309,14 +309,27 @@ create table trn_voucher
  voucher_number varchar(64),
  reference_number varchar(64),
  reference_date date,
- narration varchar(4000),
+ narration text,
  party_name varchar(256),
  _party_name varchar(64),
+ party_gstin varchar(50),
  place_of_supply varchar(256),
  is_invoice smallint,
  is_accounting_voucher smallint,
  is_inventory_voucher smallint,
- is_order_voucher smallint
+ is_order_voucher smallint,
+ is_cancelled_xml smallint,
+ irn varchar(100),
+ irn_ack_date date,
+ cost_centre_name varchar(256),
+ port_code varchar(64),
+ shipping_bill_no varchar(64),
+ shipping_bill_date date,
+ vch_gst_applicable smallint,
+ vch_gst_included smallint,
+ vch_gst_excluded smallint,
+ cmp_gst_state varchar(64),
+ stat_key varchar(256)
 );
 
 create table trn_accounting
@@ -326,7 +339,17 @@ create table trn_accounting
  _ledger varchar(64),
  amount decimal(17,2),
  amount_forex decimal(17,2),
- currency varchar(16)
+ currency varchar(16),
+ is_reverse_charge_applicable_line varchar(30),
+ gst_nature_of_supply_line varchar(100),
+ txn_hsn_sac varchar(20),
+ appropriate_for varchar(64),
+ gst_appropriate_to varchar(100),
+ excise_alloc_type varchar(64),
+ gst_taxability_line varchar(30),
+ is_party_ledger smallint,
+ is_cost_centre smallint,
+ is_eligible_for_itc smallint
 );
 
 create table trn_inventory
@@ -335,6 +358,7 @@ create table trn_inventory
  item varchar(1024),
  _item varchar(64),
  quantity decimal(15,4),
+ billed_qty decimal(15,4),
  rate decimal(15,4),
  amount decimal(17,2),
  additional_amount decimal(17,2),
@@ -343,7 +367,10 @@ create table trn_inventory
  _godown varchar(64),
  tracking_number varchar(256),
  order_number varchar(256),
- order_duedate date
+ order_duedate date,
+ is_reverse_charge_applicable_line varchar(30),
+ gst_nature_of_supply_line varchar(100),
+ txn_hsn_sac varchar(20)
 );
 
 create table trn_cost_centre

@@ -379,6 +379,14 @@ CREATE TABLE trn_inventory_accounting (
     additional_allocation_type VARCHAR(32) NOT NULL DEFAULT ''
 );
 
+CREATE TABLE trn_inventory_additional_cost (
+    guid VARCHAR(64) NOT NULL DEFAULT '',
+    ledger VARCHAR(1024) NOT NULL DEFAULT '',
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
+    additional_allocation_type VARCHAR(32) NOT NULL DEFAULT '',
+    rate_of_invoice_tax DECIMAL(9,4) DEFAULT 0
+);
+
 CREATE TABLE trn_employee (
     guid VARCHAR(64) NOT NULL DEFAULT '',
     category VARCHAR(1024) NOT NULL DEFAULT '',

@@ -367,6 +367,15 @@ create table trn_inventory_accounting
  additional_allocation_type nvarchar(32) not null default ''
 );
 
+create table trn_inventory_additional_cost
+(
+ guid varchar(64) not null default '',
+ ledger nvarchar(1024) not null default '',
+ amount decimal(17,2) not null default 0,
+ additional_allocation_type nvarchar(32) not null default '',
+ rate_of_invoice_tax decimal(9,4) default 0
+);
+
 create table trn_employee
 (
  guid varchar(64) not null default '',

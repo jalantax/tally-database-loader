@@ -1,6 +1,7 @@
 -- Master Tables-JTC edited - 4/11/25
 CREATE TABLE mst_group (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     primary_group VARCHAR(1024) NOT NULL DEFAULT 	'',
@@ -13,6 +14,7 @@ CREATE TABLE mst_group (
 
 CREATE TABLE mst_ledger (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     alias VARCHAR(256) NOT NULL DEFAULT '',
@@ -49,6 +51,7 @@ CREATE TABLE mst_ledger (
 
 CREATE TABLE mst_vouchertype (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     numbering_method VARCHAR(64) NOT NULL DEFAULT '',
@@ -245,6 +248,7 @@ CREATE TABLE mst_stockitem_standard_price (
 -- Transaction Tables
 CREATE TABLE trn_voucher (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     date DATE NOT NULL,
     voucher_type VARCHAR(1024) NOT NULL,
     voucher_number VARCHAR(64) NOT NULL DEFAULT '',

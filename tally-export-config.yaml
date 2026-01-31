@@ -6,6 +6,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -37,6 +40,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -141,6 +147,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -645,6 +654,9 @@ transaction:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: date
           field: Date
           type: date

@@ -312,6 +312,7 @@ create table trn_voucher
  narration nvarchar(4000) not null default '',
  party_name nvarchar(256) not null,
  _party_name varchar(64) not null default '',
+ party_gstin nvarchar(50) not null default '',
  place_of_supply nvarchar(256) not null,
  is_invoice tinyint,
  is_accounting_voucher tinyint,

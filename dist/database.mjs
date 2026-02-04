@@ -258,6 +258,9 @@ class _database {
                             if (fieldValue.includes('\n') || fieldValue.includes('\r') || fieldValue.includes('\t')) { //strip off new line, carriage return, tab characters
                                 fieldValue = fieldValue.replace(/\r/g, '').replace(/\n/g, ' ').replace(/\t/g, ' ');
                             }
+                            if (targetField.maxLength && fieldValue.length > targetField.maxLength) { //truncate if maxLength is specified
+                                fieldValue = fieldValue.substring(0, targetField.maxLength);
+                            }
                             if (fieldValue.includes('"')) {
                                 fieldValue = fieldValue.replace(/"/g, '""'); //escape double quotes with 2 instance of double quotes (as per ISO)
                             }

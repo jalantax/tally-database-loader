@@ -481,7 +481,8 @@
                 {
                     "name": "mobile",
                     "datatype": "string",
-                    "source": "mobile_number"
+                    "source": "mobile_number",
+                    "maxLength": 32
                 },
                 {
                     "name": "it_pan",
@@ -1057,7 +1058,8 @@
                 {
                     "name": "mobile",
                     "datatype": "string",
-                    "source": "mobilenumber"
+                    "source": "mobilenumber",
+                    "maxLength": 32
                 },
                 {
                     "name": "email",

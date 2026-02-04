@@ -1235,7 +1235,8 @@ class _tally {
                         //check if NAME attribute is present to assign name property
                         if (line.startsWith(`<${targetCollection.toUpperCase()} NAME=`)) {
                             let reName = /NAME=\"([^\"]+)\"/g.exec(line);
-                            let itemName = reName ? reName[1] : '';
+                            // Unescape HTML entities in the name (e.g., &amp; -> &)
+                            let itemName = reName ? utility.String.unescapeHTML(reName[1]) : '';
                             Object.defineProperty(currObj, 'name', { value: itemName, writable: true, enumerable: true, configurable: true });
                         }
                         retval.push(currObj);

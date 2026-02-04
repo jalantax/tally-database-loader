@@ -64,6 +64,7 @@ export interface fieldConfigJSON {
     datatype: string; // data type as per database
     source: string; // source field name as per Tally
     transform?: transformFieldConfig; // transformation config (if any)
+    maxLength?: number; // maximum length for string fields (truncates if exceeded)
 }
 
 export interface transformFieldConfig {

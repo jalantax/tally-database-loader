@@ -714,6 +714,7 @@ class _tally {
             retval = retval.replace(/&apos;/g, "'"); //escape ampersand
             retval = retval.replace(/&tab;/g, ''); //strip out tab if any
             retval = retval.replace(/&#\d+;/g, ""); //remove all unreadable character escapes
+            retval = retval.replace(/\(\-\)(\d)/g, '-$1'); //convert Tally negative format (-)N to -N
         }
         catch (err) {
             logger.logError('tally.processTdlOutputManipulation()', err);

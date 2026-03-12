@@ -589,6 +589,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
+                    timeout: 300000, // 5 minute timeout per request
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -602,6 +603,13 @@ class _tally {
                         data += result;
                     })
                         .on('end', () => {
+                        // Detect HTML error response (Tally out of memory)
+                        let trimmed = data.trimStart();
+                        if (trimmed.startsWith('<html') || trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<HTML')) {
+                            logger.logMessage('Tally returned HTML instead of XML — likely out of memory. Reduce date range or use chunked sync.');
+                            reject(new Error('Tally returned HTML error page instead of XML — likely out of memory'));
+                            return;
+                        }
                         resolve(data);
                     })
                         .on('error', (httpErr) => {
@@ -614,6 +622,11 @@ class _tally {
                     logger.logMessage('Unable to connect with Tally. Ensure tally XML port is enabled');
                     logger.logError('tally.postTallyXML()', reqError['message'] || '');
                     reject(reqError);
+                });
+                req.on('timeout', () => {
+                    req.destroy();
+                    logger.logMessage('Tally request timed out after 5 minutes — likely processing too much data.');
+                    reject(new Error('Tally HTTP request timed out after 300 seconds'));
                 });
                 req.write(msg, 'utf16le');
                 req.end();
@@ -634,6 +647,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
+                    timeout: 300000, // 5 minute timeout per request
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -653,6 +667,12 @@ class _tally {
                     logger.logMessage('Unable to connect with Tally. Ensure tally XML port is enabled');
                     logger.logError('tally.saveTallyXMLResponse()', reqError['message'] || '');
                     reject(reqError);
+                });
+                req.on('timeout', () => {
+                    req.destroy();
+                    strResponse.destroy();
+                    logger.logMessage('Tally request timed out after 5 minutes — likely processing too much data.');
+                    reject(new Error('Tally HTTP request timed out after 300 seconds'));
                 });
                 strResponse.on('finish', () => {
                     strResponse.close();

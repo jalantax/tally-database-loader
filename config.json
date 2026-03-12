@@ -10,12 +10,12 @@
         "loadmethod": "file"
     },
     "tally": {
-        "definition": "tally-export-config.yaml",
-        "server": "192.168.6.87",
+        "definition": "tally-export-config-incremental.yaml",
+        "server": "192.168.6.40",
         "port": 9000,
-        "fromdate": "2025-04-01",
-        "todate": "2026-03-31",
-        "sync": "full",
+        "fromdate": "auto",
+        "todate": "auto",
+        "sync": "incremental",
         "frequency": 0,
         "company": ""
     }

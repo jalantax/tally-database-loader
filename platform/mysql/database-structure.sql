@@ -253,7 +253,7 @@ create table trn_voucher
  date date,
  voucher_type varchar(1024),
  voucher_number varchar(64),
- reference_number varchar(64),
+ reference_number text,
  reference_date date,
  narration varchar(4000),
  party_name varchar(256),
@@ -319,7 +319,7 @@ create table trn_bill
 (
  guid varchar(64),
  ledger varchar(1024),
- name varchar(1024),
+ name text,
  amount decimal(17,2),
  billtype varchar(256),
  bill_credit_period int

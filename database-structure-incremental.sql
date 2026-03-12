@@ -398,7 +398,7 @@ create table trn_bill
  guid varchar(64) not null default '',
  ledger nvarchar(1024) not null default '',
  _ledger varchar(64) not null default '',
- name nvarchar(1024) not null default '',
+ name nvarchar(max) not null default '',
  amount decimal(17,2) not null default 0,
  billtype nvarchar(256) not null default '',
  bill_credit_period int not null default 0

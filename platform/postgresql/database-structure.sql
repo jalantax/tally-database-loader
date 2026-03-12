@@ -256,7 +256,7 @@ CREATE TABLE trn_voucher (
     date DATE NOT NULL,
     voucher_type VARCHAR(1024) NOT NULL,
     voucher_number VARCHAR(64) NOT NULL DEFAULT '',
-    reference_number VARCHAR(64) NOT NULL DEFAULT '',
+    reference_number TEXT NOT NULL DEFAULT '',
     reference_date DATE,
     narration TEXT,
     party_name VARCHAR(256) NOT NULL DEFAULT '',
@@ -344,7 +344,7 @@ CREATE TABLE trn_cost_inventory_category_centre (
 CREATE TABLE trn_bill (
     guid VARCHAR(64) NOT NULL DEFAULT '',
     ledger VARCHAR(1024) NOT NULL DEFAULT '',
-    name VARCHAR(1024) NOT NULL DEFAULT '',
+    name TEXT NOT NULL DEFAULT '',
     amount DECIMAL(17,2) NOT NULL DEFAULT 0,
     billtype VARCHAR(256) NOT NULL DEFAULT '',
     bill_credit_period INTEGER DEFAULT 0

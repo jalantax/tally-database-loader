@@ -253,7 +253,7 @@ create table trn_voucher
  date date not null,
  voucher_type nvarchar(1024) not null,
  voucher_number nvarchar(64) not null default '',
- reference_number nvarchar(64) not null default '',
+ reference_number nvarchar(max) not null default '',
  reference_date date,
  narration nvarchar(4000) not null default '',
  party_name nvarchar(256) not null,
@@ -329,7 +329,7 @@ create table trn_bill
 (
  guid varchar(64) not null default '',
  ledger nvarchar(1024) not null default '',
- name nvarchar(1024) not null default '',
+ name nvarchar(max) not null default '',
  amount decimal(17,2) not null default 0,
  billtype nvarchar(256) not null default '',
  bill_credit_period int not null default 0

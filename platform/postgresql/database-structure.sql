@@ -277,6 +277,7 @@ CREATE TABLE trn_voucher (
     vch_gst_included SMALLINT,
     vch_gst_excluded SMALLINT,
     cmp_gst_state VARCHAR(64) NOT NULL DEFAULT '',
+    cmp_gstin VARCHAR(20) NOT NULL DEFAULT '',
     stat_key VARCHAR(256) NOT NULL DEFAULT ''
 );
 

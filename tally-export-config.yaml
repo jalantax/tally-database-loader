@@ -658,7 +658,7 @@ transaction:
         - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE # Export details
         - PartyGstin # Party GSTIN at transaction time
         - VCHGSTSTATUSISAPPLICABLE,VCHGSTSTATUSISINCLUDED,VCHGSTSTATUSISEXCLUDED # GST status flags
-        - CMPGSTSTATE # Company GST state
+        - CMPGSTSTATE,CMPGSTIN # Company GST state and GSTIN
         - GST # For GST.LIST > STAT.LIST > STATKEY
       filters:
         - NOT $IsCancelled
@@ -741,6 +741,9 @@ transaction:
           type: logical
         - name: cmp_gst_state
           field: CMPGSTSTATE
+          type: text
+        - name: cmp_gstin
+          field: CMPGSTIN
           type: text
         - name: stat_key
           field: if $$NumItems:GST > 0 then $GST[First].STAT[First].STATKEY else ""

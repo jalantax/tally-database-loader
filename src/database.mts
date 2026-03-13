@@ -518,9 +518,15 @@ class _database {
 
     createDatabaseTables(syncMode: string): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
-            let scriptFileName = './database-structure.sql'
-            if (syncMode == 'incremental')
-                scriptFileName = './database-structure-incremental.sql'
+            let scriptFileName = syncMode == 'incremental'
+                ? './database-structure-incremental.sql'
+                : './database-structure.sql';
+
+            // Use platform-specific SQL file if available (correct types, no text replacement needed)
+            let platformFile = `./platform/${this.config.technology}/${syncMode == 'incremental' ? 'database-structure-incremental.sql' : 'database-structure.sql'}`;
+            if (fs.existsSync(platformFile)) {
+                scriptFileName = platformFile;
+            }
 
             let sqlQuery = fs.readFileSync(scriptFileName, 'utf-8')
             try {
@@ -528,15 +534,18 @@ class _database {
                     await this.executeMssql(sqlQuery);
                 }
                 else if (this.config.technology == 'mysql') {
-                    sqlQuery = sqlQuery.replace(/nvarchar/gi, 'varchar'); //replace nvarchar with varchart for MySQL
+                    sqlQuery = sqlQuery.replace(/nvarchar/gi, 'varchar');
                     for (const tblSQL of sqlQuery.split(/;\s*$/gm)) {
                         if (tblSQL.trim() != '')
                             await this.executeMysql(tblSQL.trim());
                     }
                 }
                 else if (this.config.technology == 'postgres') {
-                    sqlQuery = sqlQuery.replace(/nvarchar/gi, 'varchar'); //replace nvarchar with varchart for PostgreSQL
-                    sqlQuery = sqlQuery.replace(/tinyint/gi, 'smallint'); //replace tinyint with smallint for PostgreSQL
+                    // Platform file already has correct types; only transform root fallback
+                    if (!fs.existsSync(platformFile)) {
+                        sqlQuery = sqlQuery.replace(/nvarchar/gi, 'varchar');
+                        sqlQuery = sqlQuery.replace(/tinyint/gi, 'smallint');
+                    }
                     await this.executePostgres(sqlQuery);
                 }
                 resolve();

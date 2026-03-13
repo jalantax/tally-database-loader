@@ -44,14 +44,14 @@ create table mst_ledger
  parent varchar(1024),
  _parent varchar(64),
  alias varchar(256),
- description varchar(64),
- notes varchar(64),
+ description text,
+ notes text,
  is_revenue smallint,
  is_deemedpositive smallint,
  opening_balance decimal(17,2),
  closing_balance decimal(17,2),
  mailing_name varchar(256),
- mailing_address varchar(1024),
+ mailing_address text,
  mailing_state varchar(256),
  mailing_country varchar(256),
  mailing_pincode varchar(64),
@@ -67,9 +67,13 @@ create table mst_ledger
  bank_account_number varchar(64),
  bank_ifsc varchar(64),
  bank_swift varchar(64),
- bank_name varchar(64),
- bank_branch varchar(64),
- bill_credit_period int
+ bank_name varchar(256),
+ bank_branch varchar(256),
+ bill_credit_period int,
+ gstapplicable text,
+ appropriate_for varchar(64),
+ gst_appropriate_to varchar(100),
+ excise_alloc_type varchar(64)
 );
 
 create table mst_vouchertype
@@ -134,8 +138,8 @@ create table mst_stock_item
  category varchar(1024),
  _category varchar(64),
  alias varchar(256),
- description varchar(64),
- notes varchar(64),
+ description text,
+ notes text,
  part_number varchar(256),
  uom varchar(32),
  _uom varchar(64),
@@ -206,7 +210,7 @@ create table mst_employee
  blood_group varchar(32),
  father_mother_name varchar(256),
  spouse_name varchar(256),
- address varchar(256),
+ address text,
  mobile varchar(64),
  email varchar(64),
  pan varchar(32),
@@ -249,6 +253,16 @@ create table mst_gst_effective_rate
  nature_of_goods varchar(64),
  supply_type varchar(64),
  taxability varchar(64)
+);
+
+create table mst_ledger_gst_reg_history
+(
+ ledger_name varchar(1024) not null,
+ applicable_from date not null,
+ gst_registration_type varchar(64),
+ gstin varchar(64),
+ state varchar(256),
+ place_of_supply varchar(256)
 );
 
 create table mst_opening_batch_allocation
@@ -329,6 +343,7 @@ create table trn_voucher
  vch_gst_included smallint,
  vch_gst_excluded smallint,
  cmp_gst_state varchar(64),
+ cmp_gstin varchar(20),
  stat_key varchar(256)
 );
 
@@ -428,7 +443,7 @@ create table trn_bank
  transaction_type varchar(32),
  instrument_date date,
  instrument_number varchar(1024),
- bank_name varchar(64),
+ bank_name varchar(512),
  amount decimal(17,2),
  bankers_date date
 );
@@ -491,5 +506,116 @@ create table trn_attendance
  attendancetype_name varchar(1024),
  _attendancetype_name varchar(64),
  time_value decimal(17,2),
- type_value decimal(17,2)
+ type_value numeric(17,4)
 );
+
+create table trn_voucher_ewaybill
+(
+ guid varchar(64) not null,
+ eway_bill_no text,
+ eway_bill_date date
+);
+
+create table trn_inventory_taxdetails
+(
+ voucher_guid varchar(64) not null,
+ stock_item_name varchar(1024),
+ gst_duty_head text,
+ gst_rate text
+);
+
+create table trn_accounting_taxdetails
+(
+ voucher_guid varchar(64) not null,
+ ledger_name varchar(1024),
+ gst_duty_head text,
+ gst_rate text
+);
+
+-- ============================================================================
+-- PERFORMANCE INDEXES
+-- ============================================================================
+
+-- trn_voucher indexes
+create index idx_trn_voucher_date_invoice on trn_voucher(date, is_invoice)
+    where is_invoice = 1;
+create index idx_trn_voucher_type on trn_voucher using btree (upper(trim(voucher_type)));
+create index idx_trn_voucher_guid on trn_voucher(guid);
+create index idx_trn_voucher_party_name on trn_voucher using btree (trim(party_name));
+create index idx_trn_voucher_cancelled on trn_voucher(is_cancelled_xml)
+    where is_cancelled_xml is not null;
+create index idx_trn_voucher_date_type_composite
+    on trn_voucher(date, is_invoice, upper(trim(voucher_type)));
+
+-- mst_ledger indexes
+create index idx_mst_ledger_name_trim on mst_ledger using btree (trim(name));
+create index idx_mst_ledger_guid on mst_ledger(guid);
+create index idx_mst_ledger_gstn on mst_ledger(gstn) where gstn != '';
+create index idx_mst_ledger_gst_duty_head on mst_ledger(gst_duty_head)
+    where gst_duty_head != '';
+create index idx_mst_ledger_parent_trim on mst_ledger using btree (trim(parent));
+create index idx_mst_ledger_gstapplicable on mst_ledger using btree (upper(trim(gstapplicable)));
+create index idx_mst_ledger_appropriate_for on mst_ledger(appropriate_for)
+    where appropriate_for != '';
+create index idx_mst_ledger_name_exact on mst_ledger(name);
+
+-- mst_group indexes
+create index idx_mst_group_name_trim on mst_group using btree (trim(name));
+create index idx_mst_group_revenue_flags on mst_group(is_revenue, is_deemedpositive);
+create index idx_mst_group_guid on mst_group(guid);
+
+-- trn_inventory indexes
+create index idx_trn_inventory_guid on trn_inventory(guid);
+create index idx_trn_inventory_item_trim on trn_inventory using btree (trim(item));
+create index idx_trn_inventory_amount on trn_inventory(guid, amount)
+    where abs(amount) > 0.005;
+create index idx_trn_inventory_hsn_sac on trn_inventory(txn_hsn_sac)
+    where txn_hsn_sac is not null;
+create index idx_trn_inventory_item_exact on trn_inventory(item);
+create index idx_trn_inventory_guid_amount_covering
+    on trn_inventory(guid, amount, item, txn_hsn_sac)
+    where abs(amount) > 0.005;
+
+-- mst_stock_item indexes
+create index idx_mst_stock_item_name_trim on mst_stock_item using btree (trim(name));
+create index idx_mst_stock_item_guid on mst_stock_item(guid);
+create index idx_mst_stock_item_gst_type on mst_stock_item(gst_type_of_supply)
+    where gst_type_of_supply != '';
+create index idx_mst_stock_item_taxability on mst_stock_item(gst_taxability)
+    where gst_taxability != '';
+
+-- trn_accounting indexes
+create index idx_trn_accounting_guid_ledger on trn_accounting(guid, ledger);
+create index idx_trn_accounting_ledger_trim on trn_accounting using btree (trim(ledger));
+create index idx_trn_accounting_amount on trn_accounting(guid, amount)
+    where abs(amount) > 0.005;
+create index idx_trn_accounting_appropriate_for on trn_accounting(guid, appropriate_for)
+    where appropriate_for != '';
+create index idx_trn_accounting_hsn_sac on trn_accounting(txn_hsn_sac)
+    where txn_hsn_sac is not null;
+create index idx_trn_accounting_gst_taxability on trn_accounting(guid, gst_taxability_line)
+    where gst_taxability_line is not null;
+create index idx_trn_accounting_ledger_exact on trn_accounting(ledger);
+create index idx_trn_accounting_guid_amount_covering
+    on trn_accounting(guid, amount, ledger, appropriate_for)
+    where abs(amount) > 0.005;
+
+-- trn_inventory_taxdetails indexes
+create index idx_trn_inventory_taxdetails_voucher_item
+    on trn_inventory_taxdetails(voucher_guid, trim(stock_item_name), gst_duty_head);
+create index idx_trn_inventory_taxdetails_duty_head
+    on trn_inventory_taxdetails(gst_duty_head)
+    where gst_duty_head is not null;
+
+-- trn_accounting_taxdetails indexes
+create index idx_trn_accounting_taxdetails_voucher_ledger
+    on trn_accounting_taxdetails(voucher_guid, trim(ledger_name), gst_duty_head);
+create index idx_trn_accounting_taxdetails_duty_head
+    on trn_accounting_taxdetails(gst_duty_head)
+    where gst_duty_head is not null;
+
+-- mst_ledger_gst_reg_history indexes
+create index idx_ledger_gst_history_lookup
+    on mst_ledger_gst_reg_history(trim(ledger_name), applicable_from desc);
+create index idx_ledger_gst_history_full
+    on mst_ledger_gst_reg_history(ledger_name, applicable_from, gst_registration_type, gstin);

@@ -357,7 +357,7 @@ create table trn_accounting
  currency varchar(16),
  is_reverse_charge_applicable_line varchar(30),
  gst_nature_of_supply_line varchar(100),
- txn_hsn_sac varchar(20),
+ txn_hsn_sac varchar(100),
  appropriate_for varchar(64),
  gst_appropriate_to varchar(100),
  excise_alloc_type varchar(64),
@@ -385,7 +385,7 @@ create table trn_inventory
  order_duedate date,
  is_reverse_charge_applicable_line varchar(30),
  gst_nature_of_supply_line varchar(100),
- txn_hsn_sac varchar(20)
+ txn_hsn_sac varchar(100)
 );
 
 create table trn_cost_centre

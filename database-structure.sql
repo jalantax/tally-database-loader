@@ -289,7 +289,7 @@ CREATE TABLE trn_accounting (
     currency VARCHAR(16) NOT NULL DEFAULT '',
     is_reverse_charge_applicable_line VARCHAR(30),
     gst_nature_of_supply_line VARCHAR(100),
-    txn_hsn_sac VARCHAR(20),
+    txn_hsn_sac VARCHAR(100),
     appropriate_for VARCHAR(64) DEFAULT '',
     gst_appropriate_to VARCHAR(100) DEFAULT '',
     excise_alloc_type VARCHAR(64) DEFAULT '',
@@ -314,7 +314,7 @@ CREATE TABLE trn_inventory (
     order_duedate DATE,
     is_reverse_charge_applicable_line VARCHAR(30),
     gst_nature_of_supply_line VARCHAR(100),
-    txn_hsn_sac VARCHAR(20)
+    txn_hsn_sac VARCHAR(100)
 );
 
 CREATE TABLE trn_cost_centre (

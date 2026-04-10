@@ -219,7 +219,7 @@ class _tally {
                             await database.bulkLoad(path.join(process.cwd(), `./csv/_diff.data`), '_diff', tempTable.fields.map(p => p.type)); //upload to temporary table
                             fs.unlinkSync(path.join(process.cwd(), `./csv/_diff.data`)); //delete temporary file
                             //insert into delete list rows there were deleted in current data compared to previous one
-                            await database.executeNonQuery(`insert into _delete select guid from ${activeTable.name} where guid not in (select guid from _diff);`);
+                            await database.executeNonQuery(`insert into _delete select t.guid from ${activeTable.name} as t left join _diff as s on s.guid = t.guid where s.guid is null;`);
                             //insert into delete list rows that were modified in current data (as they will be imported freshly)
                             await database.executeNonQuery(`insert into _delete select t.guid from ${activeTable.name} as t join _diff as s on s.guid = t.guid where s.alterid <> t.alterid;`);
                             //remove delete list rows from the source table
@@ -589,7 +589,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
-                    timeout: 300000, // 5 minute timeout per request
+                    timeout: 900000, // 15 minute timeout per request (large companies need this for trn_accounting)
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -625,8 +625,8 @@ class _tally {
                 });
                 req.on('timeout', () => {
                     req.destroy();
-                    logger.logMessage('Tally request timed out after 5 minutes — likely processing too much data.');
-                    reject(new Error('Tally HTTP request timed out after 300 seconds'));
+                    logger.logMessage('Tally request timed out after 15 minutes — likely processing too much data.');
+                    reject(new Error('Tally HTTP request timed out after 900 seconds'));
                 });
                 req.write(msg, 'utf16le');
                 req.end();
@@ -647,7 +647,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
-                    timeout: 300000, // 5 minute timeout per request
+                    timeout: 900000, // 15 minute timeout per request (large companies need this for trn_accounting)
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -671,8 +671,8 @@ class _tally {
                 req.on('timeout', () => {
                     req.destroy();
                     strResponse.destroy();
-                    logger.logMessage('Tally request timed out after 5 minutes — likely processing too much data.');
-                    reject(new Error('Tally HTTP request timed out after 300 seconds'));
+                    logger.logMessage('Tally request timed out after 15 minutes — likely processing too much data.');
+                    reject(new Error('Tally HTTP request timed out after 900 seconds'));
                 });
                 strResponse.on('finish', () => {
                     strResponse.close();

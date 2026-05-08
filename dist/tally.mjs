@@ -216,12 +216,26 @@ class _tally {
                                 filters: activeTable.filters
                             };
                             await this.processReport('_diff', tempTable, configTallyXML);
+                            // INSTRUMENTATION: preserve _diff CSV file with table name suffix for diagnostics
+                            try {
+                                fs.copyFileSync(path.join(process.cwd(), `./csv/_diff.data`), path.join(process.cwd(), `./csv/_diff_${activeTable.name}.dump`));
+                            }
+                            catch (dumpErr) {
+                                logger.logError(`tally._diff dump for ${activeTable.name}`, dumpErr);
+                            }
                             await database.bulkLoad(path.join(process.cwd(), `./csv/_diff.data`), '_diff', tempTable.fields.map(p => p.type)); //upload to temporary table
                             fs.unlinkSync(path.join(process.cwd(), `./csv/_diff.data`)); //delete temporary file
+                            // INSTRUMENTATION: log the _diff row count Tally returned for this Primary collection
+                            let diffRowCount = await database.executeScalar('select count(*) from _diff');
+                            let preTableRowCount = await database.executeScalar(`select count(*) from ${activeTable.name}`);
+                            logger.logMessage('  _diff for %s: tally_returned=%s rows, db_pre=%s rows', activeTable.name, diffRowCount, preTableRowCount);
                             //insert into delete list rows there were deleted in current data compared to previous one
                             await database.executeNonQuery(`insert into _delete select t.guid from ${activeTable.name} as t left join _diff as s on s.guid = t.guid where s.guid is null;`);
                             //insert into delete list rows that were modified in current data (as they will be imported freshly)
                             await database.executeNonQuery(`insert into _delete select t.guid from ${activeTable.name} as t join _diff as s on s.guid = t.guid where s.alterid <> t.alterid;`);
+                            // INSTRUMENTATION: log how many rows are about to be deleted from this table
+                            let toDeleteCount = await database.executeScalar('select count(*) from _delete');
+                            logger.logMessage('  _delete for %s: %s rows will be removed', activeTable.name, toDeleteCount);
                             //remove delete list rows from the source table
                             await database.executeNonQuery(`delete from ${activeTable.name} where guid in (select guid from _delete)`);
                             //iterate through each cascade delete table and delete modified rows for insertion of fresh copy

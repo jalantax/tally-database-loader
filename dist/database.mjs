@@ -433,6 +433,56 @@ class _database {
             }
         });
     }
+    /**
+     * Execute a SQL SELECT and return the first column of every row as a flat array.
+     * Used by the per-GUID refetch path (issue #83) where the loader needs to read
+     * a list of GUIDs out of the `_refetch` temp table after it has been populated.
+     * Normalizes the per-driver row shape (postgres rowMode:'array' → arrays;
+     * mysql → objects; mssql → column objects with .value) into a uniform string[].
+     */
+    executeQueryColumn(sqlQuery) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                let out = [];
+                if (this.config.technology.toLowerCase() == 'mysql') {
+                    let result = await this.executeMysql(sqlQuery);
+                    if (Array.isArray(result.data)) {
+                        for (const row of result.data) {
+                            let lstProps = Object.keys(row);
+                            if (lstProps.length)
+                                out.push(String(row[lstProps[0]]));
+                        }
+                    }
+                }
+                else if (this.config.technology.toLowerCase() == 'mssql') {
+                    let result = await this.executeMssql(sqlQuery);
+                    if (Array.isArray(result.data)) {
+                        for (const row of result.data) {
+                            // tedious returns each row as an array of column objects with .value
+                            if (Array.isArray(row) && row.length)
+                                out.push(String(row[0].value));
+                        }
+                    }
+                }
+                else if (this.config.technology.toLowerCase() == 'postgres') {
+                    let result = await this.executePostgres(sqlQuery);
+                    if (Array.isArray(result.data)) {
+                        for (const row of result.data) {
+                            // rowMode 'array' → each row is an array of column values
+                            if (Array.isArray(row) && row.length)
+                                out.push(String(row[0]));
+                        }
+                    }
+                }
+                else
+                    ;
+                resolve(out);
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
+    }
     executeScalar(sqlQuery) {
         return new Promise(async (resolve, reject) => {
             try {

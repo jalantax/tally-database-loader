@@ -9,6 +9,11 @@ create table _delete
  guid varchar(64) not null
 );
 
+create table _refetch
+(
+ guid varchar(64) not null
+);
+
 create table _vchnumber
 (
  guid varchar(64) not null,

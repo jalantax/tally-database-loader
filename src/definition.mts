@@ -106,6 +106,7 @@ export interface tableConfigYAML {
     subcollections?: tableConfigYAML[];
     cascade_update?: tableFieldYAML[];
     cascade_delete?: tableFieldYAML[];
+    _fullRefetch?: boolean;   // runtime-only: rewrite fast-path triggered (issue #83)
 }
 
 export interface databaseFieldInfo {

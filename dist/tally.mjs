@@ -8,6 +8,46 @@ import yaml from 'js-yaml';
 import { utility } from './utility.mjs';
 import { logger } from './logger.mjs';
 import { database } from './database.mjs';
+// ----- Issue #83: incremental-sync correctness tunables -----------------------
+// Module-level helpers + constants for per-GUID refetch and rewrite fast-path.
+// See docs/plans/2026-05-08-tally-loader-incremental-sync-correctness.md and
+// docs/plans/2026-05-13-issue-83-step-0-results.txt for context.
+function parseEnvInt(name, fallback) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '')
+        return fallback;
+    const v = parseInt(raw, 10);
+    return Number.isFinite(v) ? v : fallback;
+}
+function parseEnvFloat(name, fallback) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '')
+        return fallback;
+    const v = parseFloat(raw);
+    return Number.isFinite(v) ? v : fallback;
+}
+function chunk(arr, size) {
+    const out = [];
+    if (size <= 0)
+        return [arr.slice()];
+    for (let i = 0; i < arr.length; i += size)
+        out.push(arr.slice(i, i + size));
+    return out;
+}
+// Per-GUID refetch batch size. Tally Prime crashes on ~487-GUID requests
+// (28 KB filter); 100 is verified safe (5.9 KB, 0.1s response).
+// Step 0 results: docs/plans/2026-05-13-issue-83-step-0-results.txt.
+const REFETCH_BATCH_SIZE = parseEnvInt('TALLY_LOADER_REFETCH_BATCH_SIZE', 100);
+const REWRITE_DELETE_RATIO = parseEnvFloat('TALLY_LOADER_REWRITE_RATIO', 0.5);
+const REWRITE_MIN_PRE_ROWS_MASTER = parseEnvInt('TALLY_LOADER_REWRITE_MIN_ROWS_MASTER', 50);
+const REWRITE_MIN_PRE_ROWS_TXN = parseEnvInt('TALLY_LOADER_REWRITE_MIN_ROWS_TXN', 10000);
+const DIFF_COMPLETENESS_MIN_PRE_ROWS = parseEnvInt('TALLY_LOADER_DIFF_MIN_PRE_ROWS', 50);
+const DIFF_COMPLETENESS_MIN_RATIO = parseEnvFloat('TALLY_LOADER_DIFF_MIN_RATIO', 0.5);
+const rewriteDetectionEnabled = process.env.TALLY_LOADER_REWRITE_DETECTION !== '0';
+// Hex/dash only. Used to defensively validate every GUID before it is
+// interpolated into a TDL filter string — fail loud on malformed input
+// rather than emit broken TDL that Tally would silently mis-evaluate.
+const GUID_RE = /^[0-9a-fA-F-]+$/;
 class _tally {
     config;
     lastAlterIdMaster = 0;
@@ -138,6 +178,7 @@ class _tally {
                             lstRequiredTables.push('config'); //add config table
                             lstRequiredTables.push('_diff'); //add temporary diff table
                             lstRequiredTables.push('_delete'); //add temporary delete table
+                            lstRequiredTables.push('_refetch'); //add temporary per-GUID refetch table (issue #83)
                             lstRequiredTables.push('_vchnumber'); //add temporary voucher number table
                             //verify if all the required tables exists in database
                             let countRequiredTablesFound = 0;
@@ -154,6 +195,13 @@ class _tally {
                         }
                         //acquire last AlterID of master & transaction from last sync version of Database
                         logger.logMessage('Acquiring last AlterID from database');
+                        // Issue #83: ensure _refetch exists on every incremental sync. The bulk
+                        // createDatabaseTables() above only runs when NONE of the required tables
+                        // exist, so on every existing client DB (where _diff/_delete already
+                        // exist) it is skipped and _refetch would otherwise be missing.
+                        // Idempotent, cheap, self-heals freshly-restored backups and new clients
+                        // onboarded mid-rollout.
+                        await database.executeNonQuery('create table if not exists _refetch (guid varchar(64) not null);');
                         let lastAlterIdMasterDatabase = await database.executeScalar(`select coalesce(max(cast(value as ${database.config.technology == 'mysql' ? 'unsigned int' : 'int'})),0) x from config where name = 'Last AlterID Master'`);
                         let lastAlterIdTransactionDatabase = await database.executeScalar(`select coalesce(max(cast(value as ${database.config.technology == 'mysql' ? 'unsigned int' : 'int'})),0) x from config where name = 'Last AlterID Transaction'`);
                         //update active company information before starting import
@@ -192,10 +240,17 @@ class _tally {
                         if (flgIsTransactionChanged) {
                             lstPrimaryTables.push(...this.lstTableTransactionYaml.filter(p => p.nature == 'Primary'));
                         }
+                        // Issue #83: per-table refetch GUID lists (Modified ∪ Inserted),
+                        // captured during the Primary diff loop and consumed during the
+                        // Master/Transaction refetch loops below. The shared `_refetch`
+                        // temp table is truncated at the top of every Primary iteration,
+                        // so we must snapshot its contents in-memory before moving on.
+                        const refetchGuidsByTable = new Map();
                         for (let i = 0; i < lstPrimaryTables.length; i++) {
                             let activeTable = lstPrimaryTables[i];
                             await database.executeNonQuery('truncate table _diff;');
                             await database.executeNonQuery('truncate table _delete;');
+                            await database.executeNonQuery('truncate table _refetch;'); // issue #83
                             let tempTable = {
                                 name: '',
                                 collection: activeTable.collection,
@@ -229,6 +284,18 @@ class _tally {
                             let diffRowCount = await database.executeScalar('select count(*) from _diff');
                             let preTableRowCount = await database.executeScalar(`select count(*) from ${activeTable.name}`);
                             logger.logMessage('  _diff for %s: tally_returned=%s rows, db_pre=%s rows', activeTable.name, diffRowCount, preTableRowCount);
+                            // Issue #83 Step 2b — _diff completeness check.
+                            // Per-GUID refetch (Step 4) recovers rows missed in PRIOR syncs but does
+                            // NOT defend against a _diff response truncated in the CURRENT sync:
+                            // a short _diff understates Inserted (silent miss, recoverable) AND
+                            // overstates Deleted (catastrophic — wipes legitimate rows). Refuse
+                            // to process when _diff looks suspiciously short for a non-trivial table.
+                            if (preTableRowCount >= DIFF_COMPLETENESS_MIN_PRE_ROWS &&
+                                diffRowCount < preTableRowCount * DIFF_COMPLETENESS_MIN_RATIO) {
+                                logger.logMessage('  WARNING: _diff for %s appears truncated (returned=%s, db_pre=%s, ratio=%s). ' +
+                                    'Skipping delete/refetch for this table to avoid mass-delete; next sync will retry.', activeTable.name, diffRowCount, preTableRowCount, (diffRowCount / preTableRowCount).toFixed(2));
+                                continue;
+                            }
                             //insert into delete list rows there were deleted in current data compared to previous one
                             await database.executeNonQuery(`insert into _delete select t.guid from ${activeTable.name} as t left join _diff as s on s.guid = t.guid where s.guid is null;`);
                             //insert into delete list rows that were modified in current data (as they will be imported freshly)
@@ -236,6 +303,16 @@ class _tally {
                             // INSTRUMENTATION: log how many rows are about to be deleted from this table
                             let toDeleteCount = await database.executeScalar('select count(*) from _delete');
                             logger.logMessage('  _delete for %s: %s rows will be removed', activeTable.name, toDeleteCount);
+                            // Issue #83 Step 2 — populate _refetch BEFORE the delete-from-source
+                            // statement. The Modified set query reads from the live table (joined
+                            // with _diff on alterid mismatch); the Inserted set is in _diff but
+                            // not in the cache. Both must be captured before the row gets deleted.
+                            await database.executeNonQuery(`insert into _refetch (guid) select t.guid from ${activeTable.name} as t join _diff as s on s.guid = t.guid where s.alterid <> t.alterid;`);
+                            let modifiedRefetchCount = await database.executeScalar('select count(*) from _refetch');
+                            await database.executeNonQuery(`insert into _refetch (guid) select s.guid from _diff as s left join ${activeTable.name} as t on t.guid = s.guid where t.guid is null;`);
+                            let refetchCount = await database.executeScalar('select count(*) from _refetch');
+                            let insertedRefetchCount = refetchCount - modifiedRefetchCount;
+                            logger.logMessage('  _refetch for %s: %s rows (modified=%s inserted=%s)', activeTable.name, refetchCount, modifiedRefetchCount, insertedRefetchCount);
                             //remove delete list rows from the source table
                             await database.executeNonQuery(`delete from ${activeTable.name} where guid in (select guid from _delete)`);
                             //iterate through each cascade delete table and delete modified rows for insertion of fresh copy
@@ -246,35 +323,73 @@ class _tally {
                                     await database.executeNonQuery(`delete from ${targetTable} where ${targetField} in (select guid from _delete);`);
                                 }
                             }
+                            // Issue #83 Step 3 — wholesale-rewrite fast path detection.
+                            // If _refetch would cover more than REWRITE_DELETE_RATIO of the table
+                            // and we are above the per-nature row-count floor, mark for truncate-
+                            // and-reload (cheaper than N batched per-GUID queries). The fast path
+                            // itself runs in the refetch loop below.
+                            const isTransactionTable = this.lstTableTransactionYaml.includes(activeTable);
+                            const minPreRows = isTransactionTable ? REWRITE_MIN_PRE_ROWS_TXN : REWRITE_MIN_PRE_ROWS_MASTER;
+                            if (rewriteDetectionEnabled &&
+                                preTableRowCount >= minPreRows &&
+                                refetchCount / preTableRowCount > REWRITE_DELETE_RATIO) {
+                                activeTable._fullRefetch = true;
+                                logger.logMessage('  WHOLESALE REWRITE fast path for %s: refetch=%s, pre=%s (%s%%) — truncate-and-reload', activeTable.name, refetchCount, preTableRowCount, ((refetchCount / preTableRowCount) * 100).toFixed(1));
+                            }
+                            // Snapshot the _refetch GUIDs for this table before the next
+                            // iteration truncates the shared temp table. The Master/Transaction
+                            // refetch loops below consume from refetchGuidsByTable, not from
+                            // the live _refetch table.
+                            const refetchGuids = await database.executeQueryColumn('select guid from _refetch order by guid');
+                            refetchGuidsByTable.set(activeTable.name, refetchGuids);
                         }
-                        // iterate through all Master tables to extract modifed and added rows in Tally data
+                        // Issue #83: refetch by GUID for Primary tables, watermark for non-Primary.
+                        // Master loop. All entries in lstTableMasterYaml are typically Primary
+                        // (mst_ledger, mst_group, mst_vouchertype, ...) but we check membership
+                        // of lstPrimaryTables explicitly to be safe — any non-Primary entry keeps
+                        // the existing $AlterID > watermark fetch unchanged.
                         if (flgIsMasterChanged) {
                             for (let i = 0; i < this.lstTableMasterYaml.length; i++) {
                                 let activeTable = this.lstTableMasterYaml[i];
-                                //add AlterID filter
-                                if (!Array.isArray(activeTable.filters))
-                                    activeTable.filters = [];
-                                activeTable.filters.push(`$AlterID > ${lastAlterIdMasterDatabase}`);
-                                let targetTable = activeTable.name;
-                                await this.processReport(targetTable, activeTable, configTallyXML);
-                                await database.bulkLoad(path.join(process.cwd(), `./csv/${targetTable}.data`), targetTable, activeTable.fields.map(p => p.type));
-                                fs.unlinkSync(path.join(process.cwd(), `./csv/${targetTable}.data`)); //delete raw file
-                                logger.logMessage('  syncing table %s', targetTable);
+                                if (lstPrimaryTables.includes(activeTable)) {
+                                    await this.refetchPrimaryTable(activeTable, refetchGuidsByTable, configTallyXML);
+                                }
+                                else {
+                                    // Non-Primary master (rare; e.g., derived tables) — keep
+                                    // the existing AlterID-watermark behaviour.
+                                    if (!Array.isArray(activeTable.filters))
+                                        activeTable.filters = [];
+                                    activeTable.filters.push(`$AlterID > ${lastAlterIdMasterDatabase}`);
+                                    let targetTable = activeTable.name;
+                                    await this.processReport(targetTable, activeTable, configTallyXML);
+                                    await database.bulkLoad(path.join(process.cwd(), `./csv/${targetTable}.data`), targetTable, activeTable.fields.map(p => p.type));
+                                    fs.unlinkSync(path.join(process.cwd(), `./csv/${targetTable}.data`)); //delete raw file
+                                    logger.logMessage('  syncing table %s', targetTable);
+                                }
                             }
                         }
-                        // iterate through Transaction table to extract modifed and added rows in Tally data
+                        // Transaction loop. trn_voucher is Primary (per-GUID refetch); all child
+                        // tables (trn_accounting, trn_inventory, trn_bill, ...) are non-Primary
+                        // and keep the existing AlterID-watermark fetch unchanged from today.
+                        // The cascade_delete step above removed their rows for modified parent
+                        // vouchers; the watermark refetch restores them via the child rows' own
+                        // alterid bumps. See plan Step 4 "Why scope is Primary-only".
                         if (flgIsTransactionChanged) {
                             for (let i = 0; i < this.lstTableTransactionYaml.length; i++) {
                                 let activeTable = this.lstTableTransactionYaml[i];
-                                //add AlterID filter
-                                if (!Array.isArray(activeTable.filters))
-                                    activeTable.filters = [];
-                                activeTable.filters.push(`$AlterID > ${lastAlterIdTransactionDatabase}`);
-                                let targetTable = activeTable.name;
-                                await this.processReport(targetTable, activeTable, configTallyXML);
-                                await database.bulkLoad(path.join(process.cwd(), `./csv/${targetTable}.data`), targetTable, activeTable.fields.map(p => p.type));
-                                fs.unlinkSync(path.join(process.cwd(), `./csv/${targetTable}.data`)); //delete raw file
-                                logger.logMessage('  syncing table %s', targetTable);
+                                if (lstPrimaryTables.includes(activeTable)) {
+                                    await this.refetchPrimaryTable(activeTable, refetchGuidsByTable, configTallyXML);
+                                }
+                                else {
+                                    if (!Array.isArray(activeTable.filters))
+                                        activeTable.filters = [];
+                                    activeTable.filters.push(`$AlterID > ${lastAlterIdTransactionDatabase}`);
+                                    let targetTable = activeTable.name;
+                                    await this.processReport(targetTable, activeTable, configTallyXML);
+                                    await database.bulkLoad(path.join(process.cwd(), `./csv/${targetTable}.data`), targetTable, activeTable.fields.map(p => p.type));
+                                    fs.unlinkSync(path.join(process.cwd(), `./csv/${targetTable}.data`)); //delete raw file
+                                    logger.logMessage('  syncing table %s', targetTable);
+                                }
                             }
                         }
                         if (flgIsMasterChanged) {
@@ -307,12 +422,24 @@ class _tally {
                             if (countAutoNumberVouchers) {
                                 logger.logMessage('  processing voucher number updates');
                                 await database.executeNonQuery('truncate table _vchnumber;');
-                                //pull list of voucher numbers for all the vouchers
-                                let activeTable = this.lstTableTransactionYaml.filter(p => p.name = 'trn_voucher')[0];
-                                let lstActiveTableFilter = activeTable.filters || [];
-                                lstActiveTableFilter.push('$$IsEqual:($NumberingMethod:VoucherType:$VoucherTypeName):"Automatic"');
-                                if (Array.isArray(activeTable.filters))
-                                    activeTable.filters.splice(activeTable.filters.length - 1, 1); //remove AlterID filter
+                                // Issue #83 Step 4b — pull list of voucher numbers for all the vouchers.
+                                // Fixes three pre-existing bugs in this block:
+                                //   1) `p.name = 'trn_voucher'` was an ASSIGNMENT (mutating every
+                                //      transaction-table entry's name) instead of a comparison.
+                                //   2) `lstActiveTableFilter = activeTable.filters || []` aliased
+                                //      the same array, so the subsequent splice removed the just-
+                                //      pushed auto-numbering filter instead of the AlterID filter.
+                                //   3) After Step 4's try/finally restoration of filters, the splice
+                                //      target index was wrong anyway.
+                                // Behaviour change from prior production: auto-numbering filter is
+                                // now actually applied (was silently absent due to the splice bug)
+                                // — see plan Step 4b for rationale and verification criteria.
+                                let activeTable = this.lstTableTransactionYaml.filter(p => p.name == 'trn_voucher')[0];
+                                const trnVoucherBaseFilters = [...(activeTable.filters || [])]; // snapshot, no mutation
+                                const lstActiveTableFilter = [
+                                    ...trnVoucherBaseFilters,
+                                    '$$IsEqual:($NumberingMethod:VoucherType:$VoucherTypeName):"Automatic"',
+                                ];
                                 let tempTable = {
                                     name: '',
                                     collection: activeTable.collection,
@@ -351,6 +478,7 @@ class _tally {
                         //erase rows for all the temporary calculation tables
                         await database.executeNonQuery('truncate table _diff ;');
                         await database.executeNonQuery('truncate table _delete ;');
+                        await database.executeNonQuery('truncate table _refetch ;'); // issue #83
                         await database.executeNonQuery('truncate table _vchnumber ;');
                     }
                     else
@@ -551,6 +679,91 @@ class _tally {
             }
             finally {
                 await database.closeConnectionPool();
+            }
+        });
+    }
+    /**
+     * Issue #83 — refetch a Primary table by GUID-membership from Tally.
+     *
+     * Either:
+     *  - Fast path (`activeTable._fullRefetch === true`): truncate the table
+     *    (plus its cascade_delete children) and refetch the entire collection
+     *    with no AlterID/GUID filter. Used when _refetch would cover more than
+     *    REWRITE_DELETE_RATIO of the table and we are above the per-nature row
+     *    floor. Cheaper than N batched per-GUID queries when N is very large.
+     *  - Correctness path: split the _refetch GUID list into REFETCH_BATCH_SIZE-
+     *    sized batches, build a `$Guid = "..." OR $Guid = "..." ...` TDL filter
+     *    per batch, fetch via processReport, bulk-load each batch's CSV.
+     *
+     * CRITICAL TDL note: use plain `$Guid = "<guid>"` equality. The form
+     * `$$IsEqual:$Guid:"<g>":1` (with trailing `:1` case-insensitive flag)
+     * crashes Tally Prime with "cannot understand bad formula" — do NOT
+     * reintroduce. See docs/plans/2026-05-13-issue-83-step-0-results.txt.
+     *
+     * The default batch size is 100. Tally Prime crashes on ~487-GUID requests
+     * (28 KB filter); 100 is verified safe (5.9 KB, 0.1s response). The cliff
+     * sits somewhere in 100..487 and was not bisected further to avoid more
+     * Tally crashes during verification.
+     *
+     * `activeTable.filters` is restored in `finally` so the filter array does
+     * not leak across syncs (also fixes a pre-existing latent bug where
+     * `activeTable.filters` grew by one entry per sync).
+     */
+    refetchPrimaryTable(activeTable, refetchGuidsByTable, configTallyXML) {
+        return new Promise(async (resolve, reject) => {
+            const baseFilters = Array.isArray(activeTable.filters) ? [...activeTable.filters] : [];
+            try {
+                if (activeTable._fullRefetch) {
+                    // Fast path — truncate parent + cascade children, then refetch
+                    // the entire collection without any AlterID or GUID filter.
+                    logger.logMessage('  full refetch for %s — truncating before reload', activeTable.name);
+                    await database.executeNonQuery(`truncate table ${activeTable.name} cascade;`);
+                    if (Array.isArray(activeTable.cascade_delete)) {
+                        for (const cd of activeTable.cascade_delete) {
+                            await database.executeNonQuery(`truncate table ${cd.table};`);
+                        }
+                    }
+                    activeTable.filters = [...baseFilters]; // no AlterID, no GUID filter
+                    await this.processReport(activeTable.name, activeTable, configTallyXML);
+                    await database.bulkLoad(path.join(process.cwd(), `./csv/${activeTable.name}.data`), activeTable.name, activeTable.fields.map(p => p.type));
+                    fs.unlinkSync(path.join(process.cwd(), `./csv/${activeTable.name}.data`));
+                    logger.logMessage('  syncing table %s (full refetch)', activeTable.name);
+                }
+                else {
+                    // Correctness path — refetch by GUID membership in batches.
+                    const refetchGuids = refetchGuidsByTable.get(activeTable.name) || [];
+                    if (refetchGuids.length === 0) {
+                        logger.logMessage('  no refetch needed for %s', activeTable.name);
+                    }
+                    else {
+                        const batches = chunk(refetchGuids, REFETCH_BATCH_SIZE);
+                        for (const batch of batches) {
+                            // Defensive: every GUID must be hex/dash only — fail loud on malformed.
+                            // Verified TDL syntax: $Guid = "<guid>" OR ...
+                            // DO NOT use $$IsEqual:$Guid:"<g>":1 — that crashes Tally Prime
+                            // (see docs/plans/2026-05-13-issue-83-step-0-results.txt).
+                            for (const g of batch) {
+                                if (!GUID_RE.test(g)) {
+                                    throw new Error(`refetchPrimaryTable: malformed GUID "${g}" — refusing to interpolate into TDL filter`);
+                                }
+                            }
+                            const guidClause = batch.map(g => `$Guid = "${g}"`).join(' OR ');
+                            activeTable.filters = [...baseFilters, `(${guidClause})`];
+                            await this.processReport(activeTable.name, activeTable, configTallyXML);
+                            await database.bulkLoad(path.join(process.cwd(), `./csv/${activeTable.name}.data`), activeTable.name, activeTable.fields.map(p => p.type));
+                            fs.unlinkSync(path.join(process.cwd(), `./csv/${activeTable.name}.data`));
+                        }
+                        logger.logMessage('  refetched %s rows for %s in %s batch(es)', refetchGuids.length, activeTable.name, batches.length);
+                    }
+                }
+                resolve();
+            }
+            catch (err) {
+                reject(err);
+            }
+            finally {
+                activeTable.filters = baseFilters; // prevent filter leak across syncs
+                activeTable._fullRefetch = false; // prevent flag leak
             }
         });
     }

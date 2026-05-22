@@ -237,6 +237,14 @@ CREATE TABLE trn_closingstock_ledger (
     stock_value DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
+CREATE TABLE trn_closingstock_item (
+    item VARCHAR(1024) NOT NULL DEFAULT '',
+    closing_balance NUMERIC(15,4) NOT NULL DEFAULT 0,
+    closing_value DECIMAL(17,2) NOT NULL DEFAULT 0,
+    closing_rate NUMERIC(15,4) NOT NULL DEFAULT 0,
+    _item VARCHAR(64)
+);
+
 CREATE TABLE mst_stockitem_standard_cost (
     item VARCHAR(1024) NOT NULL DEFAULT '',
     date DATE,
@@ -258,6 +266,7 @@ CREATE TABLE trn_voucher (
     voucher_number VARCHAR(64) NOT NULL DEFAULT '',
     reference_number TEXT NOT NULL DEFAULT '',
     reference_date DATE,
+    effective_date DATE,
     narration TEXT,
     party_name VARCHAR(256) NOT NULL DEFAULT '',
     party_gstin VARCHAR(50) NOT NULL DEFAULT '',
@@ -267,6 +276,8 @@ CREATE TABLE trn_voucher (
     is_inventory_voucher SMALLINT,
     is_order_voucher SMALLINT,
     is_cancelled_xml SMALLINT,
+    is_optional SMALLINT,
+    is_deleted SMALLINT,
     irn VARCHAR(100),
     irn_ack_date DATE,
     cost_centre_name VARCHAR(256),

@@ -302,6 +302,15 @@ create table trn_closingstock_ledger
  stock_value decimal(17,2)
 );
 
+create table trn_closingstock_item
+(
+ item varchar(1024),
+ closing_balance numeric(15,4),
+ closing_value decimal(17,2),
+ closing_rate numeric(15,4),
+ _item varchar(64)
+);
+
 create table mst_stockitem_standard_cost
 (
  item varchar(1024),
@@ -328,6 +337,7 @@ create table trn_voucher
  voucher_number varchar(64),
  reference_number text,
  reference_date date,
+ effective_date date,
  narration text,
  party_name varchar(256),
  _party_name varchar(64),
@@ -338,6 +348,8 @@ create table trn_voucher
  is_inventory_voucher smallint,
  is_order_voucher smallint,
  is_cancelled_xml smallint,
+ is_optional smallint,
+ is_deleted smallint,
  irn varchar(100),
  irn_ack_date date,
  cost_centre_name varchar(256),

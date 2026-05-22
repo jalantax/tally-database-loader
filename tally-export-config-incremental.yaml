@@ -428,6 +428,8 @@ master:
           field: _item
         - table: mst_stockitem_standard_price
           field: _item
+        - table: trn_closingstock_item
+          field: _item
     - name: mst_cost_category
       collection: CostCategory
       nature: Primary
@@ -798,6 +800,25 @@ master:
         - name: stock_value
           field: Amount
           type: amount
+    - name: trn_closingstock_item
+      collection: StockItem
+      nature: Derived
+      fields:
+        - name: item
+          field: Name
+          type: text
+        - name: closing_balance
+          field: ClosingBalance
+          type: quantity
+        - name: closing_value
+          field: ClosingValue
+          type: amount
+        - name: closing_rate
+          field: ClosingRate
+          type: rate
+        - name: _item
+          field: $Guid:StockItem:$Name
+          type: text
     - name: mst_stockitem_standard_cost
       collection: StockItem.StandardCostList
       nature: Derived
@@ -840,7 +861,7 @@ transaction:
       nature: Primary
       fetch:
         - AlterId,Narration,PartyLedgerName,PartyGstin,PlaceOfSupply,Reference,ReferenceDate
-        - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME
+        - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME,IsOptional,IsDeleted,EffectiveDate
         - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE
         - VCHGSTSTATUSISAPPLICABLE,VCHGSTSTATUSISINCLUDED,VCHGSTSTATUSISEXCLUDED # GST status flags
         - CMPGSTSTATE,CMPGSTIN # Company GST state and GSTIN
@@ -873,6 +894,9 @@ transaction:
         - name: reference_date
           field: ReferenceDate
           type: date
+        - name: effective_date
+          field: EffectiveDate
+          type: date
         - name: narration
           field: Narration
           type: text
@@ -902,6 +926,12 @@ transaction:
           type: logical
         - name: is_cancelled_xml
           field: IsCancelled
+          type: logical
+        - name: is_optional
+          field: IsOptional
+          type: logical
+        - name: is_deleted
+          field: IsDeleted
           type: logical
         - name: irn
           field: IRN

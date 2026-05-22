@@ -613,6 +613,22 @@ master:
         - name: stock_value
           field: Amount
           type: amount
+    - name: trn_closingstock_item
+      collection: StockItem
+      nature: Derived
+      fields:
+        - name: item
+          field: Name
+          type: text
+        - name: closing_balance
+          field: ClosingBalance
+          type: quantity
+        - name: closing_value
+          field: ClosingValue
+          type: amount
+        - name: closing_rate
+          field: ClosingRate
+          type: rate
     - name: mst_stockitem_standard_cost
       collection: StockItem.StandardCostList
       nature: Derived
@@ -654,7 +670,7 @@ transaction:
       fetch:
         - AlterId # Required for changelog modification detection
         - Narration,PartyLedgerName,PlaceOfSupply,Reference,ReferenceDate # Existing ones
-        - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME # Voucher level
+        - IsCancelled,IRN,IRNACKDATE,COSTCENTRENAME,IsOptional,IsDeleted,EffectiveDate # Voucher level
         - PORTCODE,SHIPPINGBILLNO,SHIPPINGBILLDATE # Export details
         - PartyGstin # Party GSTIN at transaction time
         - VCHGSTSTATUSISAPPLICABLE,VCHGSTSTATUSISINCLUDED,VCHGSTSTATUSISEXCLUDED # GST status flags
@@ -685,6 +701,9 @@ transaction:
         - name: reference_date
           field: ReferenceDate
           type: date
+        - name: effective_date
+          field: EffectiveDate
+          type: date
         - name: narration
           field: Narration
           type: text
@@ -711,6 +730,12 @@ transaction:
           type: logical
         - name: is_cancelled_xml # Renamed to avoid conflict if $IsCancelled filter is removed
           field: IsCancelled
+          type: logical
+        - name: is_optional
+          field: IsOptional
+          type: logical
+        - name: is_deleted
+          field: IsDeleted
           type: logical
         - name: irn
           field: IRN

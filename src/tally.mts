@@ -10,6 +10,11 @@ import { logger } from './logger.mjs';
 import { database } from './database.mjs';
 import { tallyConfig, tableConfigYAML, companyInfo, collectionConfigJSON, tableConfigJSON, fieldConfigJSON } from './definition.mjs';
 
+// Per-HTTP-request timeout to Tally. Large companies' deep tables (trn_accounting,
+// trn_bill, *_taxdetails) can exceed the old hardcoded 15 min when Tally degrades
+// under sustained load. Default 60 min; override via TALLY_LOADER_REQUEST_TIMEOUT_MS.
+const REQUEST_TIMEOUT_MS = parseInt(process.env.TALLY_LOADER_REQUEST_TIMEOUT_MS || '3600000', 10);
+
 class _tally {
 
     config: tallyConfig;
@@ -647,7 +652,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
-                    timeout: 900000,  // 15 minute timeout per request (large companies need this for trn_accounting)
+                    timeout: REQUEST_TIMEOUT_MS,  // per-request timeout; env TALLY_LOADER_REQUEST_TIMEOUT_MS, default 60 min
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -684,8 +689,8 @@ class _tally {
                 });
                 req.on('timeout', () => {
                     req.destroy();
-                    logger.logMessage('Tally request timed out after 15 minutes — likely processing too much data.');
-                    reject(new Error('Tally HTTP request timed out after 900 seconds'));
+                    logger.logMessage(`Tally request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 60000)} minutes — likely processing too much data.`);
+                    reject(new Error(`Tally HTTP request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 1000)} seconds`));
                 });
                 req.write(msg, 'utf16le');
                 req.end();
@@ -705,7 +710,7 @@ class _tally {
                     port: this.config.port,
                     path: '',
                     method: 'POST',
-                    timeout: 900000,  // 15 minute timeout per request (large companies need this for trn_accounting)
+                    timeout: REQUEST_TIMEOUT_MS,  // per-request timeout; env TALLY_LOADER_REQUEST_TIMEOUT_MS, default 60 min
                     headers: {
                         'Content-Length': Buffer.byteLength(msg, 'utf16le'),
                         'Content-Type': 'text/xml;charset=utf-16'
@@ -730,8 +735,8 @@ class _tally {
                 req.on('timeout', () => {
                     req.destroy();
                     strResponse.destroy();
-                    logger.logMessage('Tally request timed out after 15 minutes — likely processing too much data.');
-                    reject(new Error('Tally HTTP request timed out after 900 seconds'));
+                    logger.logMessage(`Tally request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 60000)} minutes — likely processing too much data.`);
+                    reject(new Error(`Tally HTTP request timed out after ${Math.round(REQUEST_TIMEOUT_MS / 1000)} seconds`));
                 });
                 strResponse.on('finish', () => {
                     strResponse.close();

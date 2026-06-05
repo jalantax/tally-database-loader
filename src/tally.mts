@@ -15,6 +15,14 @@ import { tallyConfig, tableConfigYAML, companyInfo, collectionConfigJSON, tableC
 // under sustained load. Default 60 min; override via TALLY_LOADER_REQUEST_TIMEOUT_MS.
 const REQUEST_TIMEOUT_MS = parseInt(process.env.TALLY_LOADER_REQUEST_TIMEOUT_MS || '3600000', 10);
 
+// Optimization: a transaction table carrying `skip_if_empty: <master_table>` in its
+// YAML config is skipped during incremental sync when that master table has 0 rows.
+// Used for the Derived trn_cost_* collections, which force Tally to walk every voucher
+// (~30 min on a 50K-voucher client) yet are provably empty when no cost centres exist
+// (their leaf is always CostCentreAllocations, which cannot reference a non-existent
+// cost-centre master). Set TALLY_LOADER_SKIP_EMPTY_GATED_TABLES=0 to disable.
+const SKIP_EMPTY_GATED_TABLES = !/^(0|false|no)$/i.test(process.env.TALLY_LOADER_SKIP_EMPTY_GATED_TABLES || '1');
+
 class _tally {
 
     config: tallyConfig;
@@ -302,6 +310,21 @@ class _tally {
                         if (flgIsTransactionChanged) {
                             for (let i = 0; i < this.lstTableTransactionYaml.length; i++) {
                                 let activeTable = this.lstTableTransactionYaml[i];
+
+                                //skip this table's expensive Tally walk when its gated master table is empty
+                                //(e.g. trn_cost_* are provably empty when no cost centres exist). Fail-safe:
+                                //any error reading the count falls through to the normal walk, never skips.
+                                if (SKIP_EMPTY_GATED_TABLES && activeTable.skip_if_empty) {
+                                    try {
+                                        let gateRowCount = await database.executeScalar<number>(`select count(*) from ${activeTable.skip_if_empty}`);
+                                        if (gateRowCount === 0) {
+                                            logger.logMessage('  skipping table %s (gated on empty %s)', activeTable.name, activeTable.skip_if_empty);
+                                            continue;
+                                        }
+                                    } catch (gateErr) {
+                                        logger.logError(`tally.skip_if_empty check for ${activeTable.name}`, gateErr);
+                                    }
+                                }
 
                                 //add AlterID filter
                                 if (!Array.isArray(activeTable.filters))

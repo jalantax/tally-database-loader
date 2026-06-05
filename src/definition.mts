@@ -106,6 +106,7 @@ export interface tableConfigYAML {
     subcollections?: tableConfigYAML[];
     cascade_update?: tableFieldYAML[];
     cascade_delete?: tableFieldYAML[];
+    skip_if_empty?: string; // skip this table's Tally walk during incremental sync when the named master table has 0 rows
 }
 
 export interface databaseFieldInfo {

@@ -887,6 +887,7 @@ transaction:
     - name: trn_cost_centre
       collection: Voucher.AllLedgerEntries.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -909,6 +910,7 @@ transaction:
     - name: trn_cost_category_centre
       collection: Voucher.AllLedgerEntries.CategoryAllocations.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -937,6 +939,7 @@ transaction:
     - name: trn_cost_inventory_category_centre
       collection: Voucher.AllLedgerEntries.InventoryAllocations.CategoryAllocations.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -1222,7 +1225,13 @@ transaction:
           field: Guid # Guid of the main Voucher object
           type: text
         - name: Ledger_name # CRUCIAL: Name of the ledger this rate belongs to
-          field: LedgerName
+          # ..LedgerName (parent ref): inside AllLedgerEntries.RATEDETAILS the rate
+          # detail is the current object; bare $LedgerName resolves to empty on some
+          # Tally Prime builds (e.g. remote-agent clients) while the central server's
+          # Tally resolved it via scope walk-up. The explicit parent ref climbs to the
+          # ledger entry and is version-robust. See trn_accounting (AllLedgerEntries
+          # level) which correctly uses bare LedgerName.
+          field: ..LedgerName
           type: text
         - name: gst_duty_head
           field: GSTRATEDUTYHEAD

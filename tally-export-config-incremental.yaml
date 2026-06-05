@@ -1120,6 +1120,7 @@ transaction:
     - name: trn_cost_centre
       collection: Voucher.AllLedgerEntries.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -1147,6 +1148,7 @@ transaction:
     - name: trn_cost_category_centre
       collection: Voucher.AllLedgerEntries.CategoryAllocations.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -1180,6 +1182,7 @@ transaction:
     - name: trn_cost_inventory_category_centre
       collection: Voucher.AllLedgerEntries.InventoryAllocations.CategoryAllocations.CostCentreAllocations
       nature: Derived
+      skip_if_empty: mst_cost_centre
       fetch:
         - AllLedgerEntries
       filters:
@@ -1504,7 +1507,7 @@ transaction:
           field: Guid
           type: text
         - name: ledger_name
-          field: LedgerName
+          field: ..LedgerName
           type: text
         - name: gst_duty_head
           field: GSTRATEDUTYHEAD

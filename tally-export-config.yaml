@@ -1224,7 +1224,7 @@ transaction:
         - name: voucher_guid
           field: Guid # Guid of the main Voucher object
           type: text
-        - name: Ledger_name # CRUCIAL: Name of the ledger this rate belongs to
+        - name: ledger_name # MUST be lowercase to match the ledger_name DB column / agent JSON-key ingest (#102)
           # ..LedgerName (parent ref): inside AllLedgerEntries.RATEDETAILS the rate
           # detail is the current object; bare $LedgerName resolves to empty on some
           # Tally Prime builds (e.g. remote-agent clients) while the central server's

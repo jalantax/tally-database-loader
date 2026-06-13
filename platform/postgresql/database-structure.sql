@@ -340,8 +340,7 @@ CREATE TABLE trn_cost_category_centre (
     ledger VARCHAR(1024) NOT NULL DEFAULT '',
     costcategory VARCHAR(1024) NOT NULL DEFAULT '',
     costcentre VARCHAR(1024) NOT NULL DEFAULT '',
-    amount DECIMAL(17,2) NOT NULL DEFAULT 0,
-    is_deemed_positive SMALLINT
+    amount DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
 CREATE TABLE trn_cost_inventory_category_centre (

@@ -933,9 +933,6 @@ transaction:
         - name: amount
           field: Amount
           type: amount
-        - name: is_deemed_positive
-          field: IsDeemedPositive
-          type: logical
     - name: trn_cost_inventory_category_centre
       collection: Voucher.AllLedgerEntries.InventoryAllocations.CategoryAllocations.CostCentreAllocations
       nature: Derived

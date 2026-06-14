@@ -12,3 +12,5 @@ error-log.txt
 *.duckdb
 bigquery-credentials.json
 adls-config.json
+# DB credentials live here at runtime — never commit (issue #54)
+config.json

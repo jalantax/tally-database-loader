@@ -175,6 +175,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Symbol
           type: text
@@ -200,6 +203,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -216,6 +222,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -229,6 +238,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -244,6 +256,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -317,6 +332,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -333,6 +351,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -349,6 +370,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -373,6 +397,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text
@@ -451,6 +478,9 @@ master:
         - name: guid
           field: Guid
           type: text
+        - name: alterid
+          field: AlterId
+          type: number
         - name: name
           field: Name
           type: text

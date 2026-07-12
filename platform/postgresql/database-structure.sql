@@ -62,6 +62,7 @@ CREATE TABLE mst_vouchertype (
 
 CREATE TABLE mst_uom (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     formalname VARCHAR(256) NOT NULL DEFAULT '',
     is_simple_unit SMALLINT NOT NULL,
@@ -72,6 +73,7 @@ CREATE TABLE mst_uom (
 
 CREATE TABLE mst_godown (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     address TEXT
@@ -79,18 +81,21 @@ CREATE TABLE mst_godown (
 
 CREATE TABLE mst_stock_category (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE mst_stock_group (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT ''
 );
 
 CREATE TABLE mst_stock_item (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     category VARCHAR(1024) NOT NULL DEFAULT '',
@@ -117,6 +122,7 @@ CREATE TABLE mst_stock_item (
 
 CREATE TABLE mst_cost_category (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     allocate_revenue SMALLINT,
     allocate_non_revenue SMALLINT
@@ -124,6 +130,7 @@ CREATE TABLE mst_cost_category (
 
 CREATE TABLE mst_cost_centre (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     category VARCHAR(1024) NOT NULL DEFAULT ''
@@ -131,6 +138,7 @@ CREATE TABLE mst_cost_centre (
 
 CREATE TABLE mst_attendance_type (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     uom VARCHAR(32) NOT NULL DEFAULT '',
@@ -140,6 +148,7 @@ CREATE TABLE mst_attendance_type (
 
 CREATE TABLE mst_employee (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     id_number VARCHAR(256) NOT NULL DEFAULT '',
@@ -167,6 +176,7 @@ CREATE TABLE mst_employee (
 
 CREATE TABLE mst_payhead (
     guid VARCHAR(64) PRIMARY KEY,
+    alterid INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(1024) NOT NULL DEFAULT '',
     parent VARCHAR(1024) NOT NULL DEFAULT '',
     payslip_name VARCHAR(1024) NOT NULL DEFAULT '',
